@@ -4,12 +4,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Bingo Board Generator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <h1>Bingo Board Generator</h1>
-    <div id="bingo-board"></div>
+    <div id="bingo-board">
+        <div class="bingo-row">
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+        </div>
+        <div class="bingo-row">
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+        </div>
+        <div class="bingo-row">
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell free-space"><button id="create">Click to Begin</button></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+        </div>
+        <div class="bingo-row">
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+        </div>
+        <div class="bingo-row">
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+            <div class="bingo-cell"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span id="close-modal" class="close">&times;</span>
+            <form id="bingo-form" class="bingo-form">
+                <label for="bingo-name">What do you want to call your board?</label>
+                <input type="text" id="bingo-name" placeholder="e.g. 2025 Bingo">
+                <label for="bingo-goal">Enter your goals</label>
+                <input type="text" id="bingo-goal" placeholder="e.g. read 10 books">
+                <button id="submit-goal">Enter</button>
+            </form>
+            <ol id="bingo-list">
+
+            </ol>
+            <button id="submit-form" class="">Generate Bingo Board</button>
+        </div>
+    </div>
+
+    <!-- Your custom script -->
+    <script type="module" src="script.js"></script>
 </body>
 
 </html>

@@ -1,18 +1,87 @@
-  #bingo-board {
-      display: grid;
-      grid-template-rows: repeat(5, 1fr);
-      gap: 5px;
-  }
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+}
 
-  .bingo-row {
-      display: flex;
-      justify-content: center;
-  }
+#bingo-board {
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    width: 100%;
+}
 
-  .bingo-cell {
-      width: 50px;
-      height: 50px;
-      text-align: center;
-      line-height: 50px;
-      border: 1px solid black;
-  }
+.bingo-row {
+    display: flex;
+    justify-content: center;
+}
+
+.bingo-row:last-of-type .bingo-cell {
+    border-bottom: 1px solid black;
+}
+
+.bingo-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 130px;
+    width: 100%;
+    height: 140px;
+    text-align: center;
+    line-height: 50px;
+    border: 1px solid black;
+    border-left: none;
+    border-bottom: none;
+}
+
+.bingo-cell:first-of-type {
+    border-left: 1px solid black;
+}
+
+.bingo-cell.free-space {
+    text-transform: uppercase;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Black background with opacity */
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
