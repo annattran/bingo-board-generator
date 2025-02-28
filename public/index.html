@@ -99,20 +99,28 @@
     </div>
 
     <!-- Modal -->
-    <div id="modal" class="modal">
+    <div id="bingo-name-modal" class="modal">
         <div class="modal-content">
-            <span id="close-modal" class="close">&times;</span>
-            <form id="bingo-form" class="bingo-form">
-                <label for="bingo-name">What do you want to call your board?</label>
-                <input type="text" id="bingo-name" placeholder="e.g. 2025 Bingo">
-                <label for="bingo-goal">Enter your goals</label>
-                <input type="text" id="bingo-goal" placeholder="e.g. read 10 books">
-                <button id="submit-goal">Enter</button>
+            <span class="close-modal close">&times;</span>
+            <form id="bingo-name-form" class="bingo-form">
+                <label for="bingoName">What do you want to call your board?</label>
+                <input type="text" id="bingoName" placeholder="e.g. 2025 Bingo" required>
+                <button type"submit" id="submit-name" class="">Next</button>
             </form>
-            <ol id="bingo-list">
+        </div>
+    </div>
 
-            </ol>
-            <button id="submit-form" class="">Generate Bingo Board</button>
+    <!-- Modal -->
+    <div id="bingo-items-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal close">&times;</span>
+            <form id="bingo-list-form" class="bingo-form">
+                <label for="bingo-goal">Enter your goals</label>
+                <input type="text" id="bingo-goal" placeholder="e.g. read 10 books" required>
+                <ol id="bingo-list">
+                </ol>
+                <button type"submit" id="submit-list" class="">Generate Bingo Board</button>
+            </form>
         </div>
     </div>
 

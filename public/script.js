@@ -129,34 +129,114 @@ togglePasswordButtons.forEach(button => button.addEventListener('click', (e) => 
 
 
 // Get modal element
-const modal = document.getElementById('modal');
-const closeModal = document.getElementById('close-modal');
+const bingoNameModal = document.getElementById('bingo-name-modal');
+const bingoItemsModal = document.getElementById('bingo-items-modal');
+const closeModal = document.querySelectorAll('close-modal');
 const createButton = document.getElementById('create');
-const submitGoalButton = document.getElementById('submit-goal');
-const submitFormButton = document.getElementById('submit-form');
+const submitNameForm = document.getElementById('bingo-name-form');
+const bingoGoal = document.getElementById('bingo-goal');
+const bingoList = document.getElementById('bingo-list');
+const submitListForm = document.getElementById('bingo-list-form');
 
 // When the "create" button is clicked, show the modal
 createButton.addEventListener('click', () => {
-    modal.style.display = 'block';
+    bingoNameModal.style.display = 'block';
 });
 
 // When the user clicks the "X", close the modal
-closeModal.addEventListener('click', () => {
+closeModal.forEach(button => button.addEventListener('click', (e) => {
     modal.style.display = 'none';
+}));
+
+submitNameForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const bingoName = submitNameForm.bingoName.value;
+
+    const user = auth.currentUser;
+    if (!user) {
+        console.log('Please log in first.');
+        return;
+    }
+
+    try {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`/users/${user.uid}/bingo-lists`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ bingoName, bingoItems: [] })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            console.log(`'${bingoName}' has been created successfully!`);
+
+            localStorage.setItem('listId', data.id); // Store listId for future use
+
+            bingoNameModal.style.display = 'none';
+            bingoItemsModal.style.display = 'block';
+        } else {
+            const errorData = await res.json();
+            console.log(errorData.error || 'Error creating list.');
+        }
+    } catch (error) {
+        console.log(`Error creating new list: ${error}`);
+    }
 });
 
-// When the user submits input, log it (or use it as needed)
-submitGoalButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    const bingoGoal = document.getElementById('bingo-goal');
-    const bingoItem = document.createElement('li');
-    bingoItem.innerHTML = bingoGoal.value;
-    document.getElementById('bingo-list').append(bingoItem);
-    bingoGoal.value = '';
+// Function to add goal to Firebase
+async function addGoalToBackend(goalValue) {
+    const userId = auth.currentUser ? auth.currentUser.uid : null;
+    const listId = localStorage.getItem('listId'); // Retrieve listId
+
+    if (!userId || !listId) {
+        console.error("Missing userId or listId");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`/users/${userId}/bingo-lists/${listId}/items`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ bingoItem: goalValue })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            console.log("Goal added:", data);
+            return true;
+        } else {
+            console.error("Error:", data.error);
+            return false;
+        }
+    } catch (error) {
+        console.error("Request failed:", error);
+        return false;
+    }
+}
+
+// When the user presses "Enter"
+bingoGoal.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+
+        const goalValue = bingoGoal.value.trim();
+        if (!goalValue) return;
+
+        const added = await addGoalToBackend(goalValue);
+        if (added) {
+            const listItem = document.createElement('li');
+            listItem.textContent = goalValue;
+            bingoList.appendChild(listItem);
+
+            bingoGoal.value = ''; // Clear input
+        }
+    }
 });
 
 // When the user submits form, log it (or use it as needed)
-submitFormButton.addEventListener('click', (e) => {
+submitListForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const bingoName = document.getElementById('bingo-name').value;
 
@@ -165,7 +245,8 @@ submitFormButton.addEventListener('click', (e) => {
 
 // When the user clicks anywhere outside the modal, close it
 window.addEventListener('click', (event) => {
-    if (event.target === modal) {
-        modal.style.display = 'none';
+    if (event.target === bingoNameModal || event.target === bingoItemsModal) {
+        bingoNameModal.style.display = 'none';
+        bingoItemsModal.style.display = 'none';
     }
 });
