@@ -238,9 +238,6 @@ bingoGoal.addEventListener('keydown', async (e) => {
 // When the user submits form, log it (or use it as needed)
 submitListForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const bingoName = document.getElementById('bingo-name').value;
-
-    modal.style.display = 'none'; // Close the modal after submission
 });
 
 // When the user clicks anywhere outside the modal, close it
