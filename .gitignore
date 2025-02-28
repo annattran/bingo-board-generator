@@ -1,0 +1,5 @@
+# Environment variables
+.env
+
+# Firebase service account credentials
+firebase-admin.json
