@@ -168,10 +168,10 @@ input:disabled {
     width: 100%;
     height: 140px;
     text-align: center;
-    line-height: 50px;
     border: 1px solid black;
     border-left: none;
     border-bottom: none;
+    padding: 10px;
 }
 
 .bingo-cell:first-of-type {

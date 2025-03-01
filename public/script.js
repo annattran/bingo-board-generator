@@ -19,6 +19,7 @@ const auth = getAuth(app);
 const db = getFirestore(app); // Initialize Firestore
 
 // Cache DOM elements
+const heading = document.querySelector('h1');
 const bingoBoard = document.getElementById('bingo-board');
 const authContainer = document.getElementById('authContainer');
 const logoutButton = document.getElementById('logoutButton');
@@ -173,6 +174,7 @@ submitNameForm.addEventListener('submit', async (e) => {
             console.log(`'${bingoName}' has been created successfully!`);
 
             localStorage.setItem('listId', data.id); // Store listId for future use
+            localStorage.setItem('bingoName', bingoName); // Store the bingo name
 
             bingoNameModal.style.display = 'none';
             bingoItemsModal.style.display = 'block';
@@ -304,7 +306,15 @@ submitListForm.addEventListener('submit', (e) => {
     });
 
     console.log("Bingo board updated!");
+
+    // Get the bingo name from localStorage and update the h1 heading
+    const bingoName = localStorage.getItem('bingoName');
+    heading.textContent = bingoName; // Update the h1 heading
+
+    // Set the free space text
     freeSpaceCell.innerText = 'FREE SPACE';
+
+    // Close the modal
     bingoItemsModal.style.display = 'none';
 });
 
