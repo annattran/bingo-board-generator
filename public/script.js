@@ -137,6 +137,7 @@ const submitNameForm = document.getElementById('bingo-name-form');
 const bingoGoal = document.getElementById('bingo-goal');
 const bingoList = document.getElementById('bingo-list');
 const submitListForm = document.getElementById('bingo-list-form');
+const generateButton = document.getElementById('submit-list');
 
 // When the "create" button is clicked, show the modal
 createButton.addEventListener('click', () => {
@@ -182,6 +183,16 @@ submitNameForm.addEventListener('submit', async (e) => {
         console.log(`Error creating new list: ${error}`);
     }
 });
+
+// Function to check the number of items and enable/disable submit button
+function checkItemCount() {
+    const items = document.querySelectorAll('#bingo-list li'); // Get all added items
+    if (items.length === 25) {
+        generateButton.removeAttribute('disabled');
+    } else {
+        generateButton.setAttribute('disabled', 'true');
+    }
+}
 
 // Function to add goal to Firebase
 async function addGoalToBackend(goalValue) {
@@ -230,13 +241,23 @@ bingoGoal.addEventListener('keydown', async (e) => {
             bingoList.appendChild(listItem);
 
             bingoGoal.value = ''; // Clear input
+
+            checkItemCount(); // Check item count after adding
         }
     }
 });
 
-// When the user submits form, log it (or use it as needed)
+// When the user submits the form
 submitListForm.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    const items = document.querySelectorAll('#bingo-list li');
+    if (items.length < 25) {
+        alert('You need to add 25 items before submitting.');
+        return;
+    }
+
+    console.log("Form submitted with 25 items!");
 });
 
 // When the user clicks anywhere outside the modal, close it

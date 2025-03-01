@@ -139,6 +139,11 @@ button:hover {
     cursor: pointer;
 }
 
+button:disabled {
+    background: lightgrey;
+    cursor: not-allowed;
+}
+
 .bingo-board {
     display: grid;
     grid-template-rows: repeat(5, 1fr);
