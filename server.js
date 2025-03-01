@@ -82,8 +82,13 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
             return res.status(400).json({ error: 'Cannot add more than 24 items' });
         }
 
-        // Add the bingo item with its order number
-        listData.bingoItems.push({ item: bingoItem, order: order });
+        // Add the bingo item with its order number and default completed value
+        listData.bingoItems.push({
+            item: bingoItem,
+            order: order,
+            completed: false // Default completed value
+        });
+
         await listRef.update({ bingoItems: listData.bingoItems });
 
         res.json({ message: 'Item added', bingoItems: listData.bingoItems });
@@ -111,7 +116,8 @@ app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, r
         const itemsWithId = bingoItems.map((item, index) => ({
             id: bingoListRef.collection('items').doc().id,  // Get Firestore ID for the item
             bingoItem: item.item,
-            order: item.order
+            order: item.order,
+            completed: item.completed
         }));
 
         // Return the items with their IDs wrapped in an object

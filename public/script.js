@@ -314,8 +314,9 @@ submitListForm.addEventListener('submit', async (e) => {
             const div = document.createElement('div');
             div.classList.add('edit-item');
             div.setAttribute('data-id', item.id);
+            div.setAttribute('data-completed', item.completed)
             div.textContent = item.bingoItem;
-            cells[index].append(anchor); // Place the item in the grid
+            cells[index].append(div); // Place the item in the grid
         });
 
         console.log("Bingo board updated!");
