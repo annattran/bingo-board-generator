@@ -63,11 +63,11 @@ app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
 // 📌 2️⃣ Add Items to a Bingo List (max 25 items)
 app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
     try {
-        const { bingoItem } = req.body;
+        const { bingoItem, order } = req.body; // Now expecting an 'order' field
         const { userId, listId } = req.params;
 
-        if (!bingoItem) {
-            return res.status(400).json({ error: 'Bingo item is required' });
+        if (!bingoItem || !order) {
+            return res.status(400).json({ error: 'Bingo item and order are required' });
         }
 
         const listRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
@@ -82,7 +82,8 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
             return res.status(400).json({ error: 'Cannot add more than 24 items' });
         }
 
-        listData.bingoItems.push(bingoItem);
+        // Add the bingo item with its order number
+        listData.bingoItems.push({ item: bingoItem, order: order });
         await listRef.update({ bingoItems: listData.bingoItems });
 
         res.json({ message: 'Item added', bingoItems: listData.bingoItems });

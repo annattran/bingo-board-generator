@@ -196,6 +196,9 @@ function checkItemCount() {
     }
 }
 
+// Initialize a shuffled array of numbers from 1 to 24
+let orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
+
 // Function to add goal to Firebase
 async function addGoalToBackend(goalValue) {
     const user = auth.currentUser;
@@ -208,18 +211,28 @@ async function addGoalToBackend(goalValue) {
 
     try {
         const idToken = await user.getIdToken();
-        const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
+
+        // If there are no available orders left, regenerate and shuffle the list
+        if (orderList.length === 0) {
+            orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
+        }
+
+        // Assign the first available order to the new goal and remove it from the array
+        const randomOrder = orderList.shift();
+
+        // Add the goal with the assigned order to the backend
+        const addResponse = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ bingoItem: goalValue })
+            body: JSON.stringify({ bingoItem: goalValue, order: randomOrder })
         });
 
-        const data = await response.json();
-        if (response.ok) {
-            console.log("Goal added:", data);
+        const addData = await addResponse.json();
+        if (addResponse.ok) {
+            console.log("Goal added:", addData);
             return true;
         } else {
-            console.error("Error:", data.error);
+            console.error("Error:", addData.error);
             return false;
         }
     } catch (error) {
@@ -228,6 +241,15 @@ async function addGoalToBackend(goalValue) {
     } finally {
         checkItemCount(); // Ensure the function runs regardless of the outcome
     }
+}
+
+// Helper function to shuffle an array (Fisher-Yates algorithm)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 // When the user presses "Enter"
