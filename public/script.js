@@ -38,7 +38,6 @@ const navButtonsContainer = document.getElementById("navButtonsContainer");
 function toggleUI(userSignedIn, hasList = true) {
     // Handle UI visibility based on user sign-in status
     const hideAuth = userSignedIn;
-    const moveNav = userSignedIn && hasList;
     const showBingoBoard = userSignedIn && hasList;
 
     // Hide or show auth container based on user sign-in status
@@ -69,6 +68,7 @@ logoutButton.addEventListener('click', async () => {
         localStorage.removeItem('userId');
         console.log("User signed out successfully.");
         toggleUI(false);
+        heading.textContent = 'Bingo Board Generator';
     } catch (error) {
         console.log(`Error signing out: ${error}`);
     }
@@ -311,8 +311,11 @@ submitListForm.addEventListener('submit', async (e) => {
         // Update the bingo board with sorted items
         const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
         sortedItems.forEach((item, index) => {
-            console.log(item, index);
-            cells[index].textContent = item.item; // Place the item in the grid
+            const div = document.createElement('div');
+            div.classList.add('edit-item');
+            div.setAttribute('data-id', item.id);
+            div.textContent = item.bingoItem;
+            cells[index].append(anchor); // Place the item in the grid
         });
 
         console.log("Bingo board updated!");

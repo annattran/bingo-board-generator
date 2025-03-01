@@ -107,8 +107,15 @@ app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, r
 
         const bingoItems = bingoListDoc.data().bingoItems || []; // Fetch the bingo items array
 
-        // Return the items wrapped in an object, consistent with other endpoints
-        res.json({ items: bingoItems });
+        // Include the Firestore document ID for each bingo item
+        const itemsWithId = bingoItems.map((item, index) => ({
+            id: bingoListRef.collection('items').doc().id,  // Get Firestore ID for the item
+            bingoItem: item.item,
+            order: item.order
+        }));
+
+        // Return the items with their IDs wrapped in an object
+        res.json({ items: itemsWithId });
     } catch (error) {
         console.error('Error fetching bingo items:', error);
         res.status(500).json({ error: 'Failed to retrieve bingo items' });
