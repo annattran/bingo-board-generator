@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Board Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -60,7 +65,7 @@
         </div>
     </div>
 
-    <div id="bingo-board" class="hidden">
+    <div id="bingo-board" class="bingo-board hidden">
         <div class="bingo-row">
             <div class="bingo-cell"></div>
             <div class="bingo-cell"></div>
@@ -115,8 +120,8 @@
         <div class="modal-content">
             <span class="close-modal close">&times;</span>
             <form id="bingo-list-form" class="bingo-form">
-                <label for="bingo-goal">Enter your goals</label>
-                <input type="text" id="bingo-goal" placeholder="e.g. read 10 books" required>
+                <label for="bingo-goal">Enter 25 goals</label>
+                <input type="text" id="bingo-goal" required>
                 <ol id="bingo-list">
                 </ol>
                 <button type"submit" id="submit-list" class="">Generate Bingo Board</button>

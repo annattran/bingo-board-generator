@@ -27,10 +27,33 @@ body {
     text-align: center;
     height: 100vh;
     overflow: hidden;
+    font-family: "Cabin", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+
+h1,
 h2 {
     margin: 20px 0;
+}
+
+.navButtonsContainer {
+    position: absolute;
+    top: 20px;
+    right: 20px;
 }
 
 .authContainer {
@@ -116,7 +139,7 @@ button:hover {
     cursor: pointer;
 }
 
-#bingo-board {
+.bingo-board {
     display: grid;
     grid-template-rows: repeat(5, 1fr);
     width: 100%;
@@ -153,6 +176,13 @@ button:hover {
     text-transform: uppercase;
 }
 
+.bingo-board button {
+    background: none;
+    color: black;
+    min-width: auto;
+    padding: 0;
+}
+
 /* Modal styles */
 .modal {
     display: none;
@@ -171,15 +201,18 @@ button:hover {
 .modal-content {
     background-color: white;
     margin: 5% auto;
-    padding: 20px;
+    padding: 40px;
     border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
 }
 
 .close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
     color: #aaa;
-    float: right;
     font-size: 28px;
     font-weight: bold;
 }
@@ -191,7 +224,20 @@ button:hover {
     cursor: pointer;
 }
 
-form {
-    display: flex;
-    flex-direction: column;
+.modal form {
+    gap: 10px;
+}
+
+.modal ol {
+    max-height: 300px;
+    overflow-y: auto;
+    list-style-position: inside;
+}
+
+.modal ol li:nth-of-type(even) {
+    background: lavenderblush;
+}
+
+.modal li {
+    padding: 5px 10px;
 }
