@@ -138,6 +138,7 @@ const bingoGoal = document.getElementById('bingo-goal');
 const bingoList = document.getElementById('bingo-list');
 const submitListForm = document.getElementById('bingo-list-form');
 const generateButton = document.getElementById('submit-list');
+const freeSpaceCell = document.querySelector('.free-space');
 
 // When the "create" button is clicked, show the modal
 createButton.addEventListener('click', () => {
@@ -187,7 +188,8 @@ submitNameForm.addEventListener('submit', async (e) => {
 // Function to check the number of items and enable/disable submit button
 function checkItemCount() {
     const items = document.querySelectorAll('#bingo-list li'); // Get all added items
-    if (items.length === 25) {
+    if (items.length === 24) {
+        bingoGoal.setAttribute('disabled', 'true');
         generateButton.removeAttribute('disabled');
     } else {
         generateButton.setAttribute('disabled', 'true');
@@ -223,6 +225,8 @@ async function addGoalToBackend(goalValue) {
     } catch (error) {
         console.error("Request failed:", error);
         return false;
+    } finally {
+        checkItemCount(); // Ensure the function runs regardless of the outcome
     }
 }
 
@@ -230,6 +234,12 @@ async function addGoalToBackend(goalValue) {
 bingoGoal.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
+
+        const items = document.querySelectorAll('#bingo-list li');
+        if (items.length >= 25) {
+            alert("You've reached the max number of items!");
+            return;
+        }
 
         const goalValue = bingoGoal.value.trim();
         if (!goalValue) return;
@@ -239,11 +249,10 @@ bingoGoal.addEventListener('keydown', async (e) => {
             const listItem = document.createElement('li');
             listItem.textContent = goalValue;
             bingoList.appendChild(listItem);
-
-            bingoGoal.value = ''; // Clear input
-
-            checkItemCount(); // Check item count after adding
+            bingoGoal.value = '';
         }
+
+        checkItemCount();
     }
 });
 
@@ -251,13 +260,30 @@ bingoGoal.addEventListener('keydown', async (e) => {
 submitListForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const items = document.querySelectorAll('#bingo-list li');
-    if (items.length < 25) {
-        alert('You need to add 25 items before submitting.');
+    const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
+
+    if (items.length < 24) {
+        alert('You need to add at least 24 items (excluding the free space) before submitting.');
         return;
     }
 
-    console.log("Form submitted with 25 items!");
+    // Shuffle the array using Fisher-Yates shuffle
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    // Select all cells except the free space
+    const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
+
+    // Assign shuffled items to cells
+    cells.forEach((cell, index) => {
+        cell.textContent = items[index] || ''; // Ensure no out-of-bounds errors
+    });
+
+    console.log("Bingo board updated!");
+    freeSpaceCell.innerText = 'FREE SPACE';
+    bingoItemsModal.style.display = 'none';
 });
 
 // When the user clicks anywhere outside the modal, close it

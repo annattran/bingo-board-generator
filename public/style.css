@@ -139,7 +139,8 @@ button:hover {
     cursor: pointer;
 }
 
-button:disabled {
+button:disabled,
+input:disabled {
     background: lightgrey;
     cursor: not-allowed;
 }
@@ -178,7 +179,7 @@ button:disabled {
 }
 
 .bingo-cell.free-space {
-    text-transform: uppercase;
+    font-weight: bold;
 }
 
 .bingo-board button {
