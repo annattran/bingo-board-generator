@@ -92,6 +92,29 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
     }
 });
 
+// GET endpoint to fetch bingo items for a specific user's bingo list
+app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
+    const { userId, listId } = req.params;
+
+    try {
+        // Fetch the bingo list from Firestore
+        const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
+        const bingoListDoc = await bingoListRef.get();
+
+        if (!bingoListDoc.exists) {
+            return res.status(404).json({ error: 'Bingo list not found' });
+        }
+
+        const bingoItems = bingoListDoc.data().bingoItems || []; // Fetch the bingo items array
+
+        // Return the items wrapped in an object, consistent with other endpoints
+        res.json({ items: bingoItems });
+    } catch (error) {
+        console.error('Error fetching bingo items:', error);
+        res.status(500).json({ error: 'Failed to retrieve bingo items' });
+    }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

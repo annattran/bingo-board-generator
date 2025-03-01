@@ -281,7 +281,7 @@ bingoGoal.addEventListener('keydown', async (e) => {
 });
 
 // When the user submits the form
-submitListForm.addEventListener('submit', (e) => {
+submitListForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
@@ -291,31 +291,44 @@ submitListForm.addEventListener('submit', (e) => {
         return;
     }
 
-    // Shuffle the array using Fisher-Yates shuffle
-    for (let i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [items[i], items[j]] = [items[j], items[i]];
-    }
-
-    // Select all cells except the free space
-    const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
-
-    // Assign shuffled items to cells
-    cells.forEach((cell, index) => {
-        cell.textContent = items[index] || ''; // Ensure no out-of-bounds errors
+    // Fetch the bingo items from Firestore, sorted by randomOrder
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
+    const idToken = await user.getIdToken();
+    const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${idToken}`
+        }
     });
 
-    console.log("Bingo board updated!");
+    const data = await response.json();
+    if (response.ok) {
+        // Sort items by random order
+        const sortedItems = data.items.sort((a, b) => a.order - b.order);
+        console.log(sortedItems);
 
-    // Get the bingo name from localStorage and update the h1 heading
-    const bingoName = localStorage.getItem('bingoName');
-    heading.textContent = bingoName; // Update the h1 heading
+        // Update the bingo board with sorted items
+        const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
+        sortedItems.forEach((item, index) => {
+            console.log(item, index);
+            cells[index].textContent = item.item; // Place the item in the grid
+        });
 
-    // Set the free space text
-    freeSpaceCell.innerText = 'FREE SPACE';
+        console.log("Bingo board updated!");
 
-    // Close the modal
-    bingoItemsModal.style.display = 'none';
+        // Get the bingo name from localStorage and update the h1 heading
+        const bingoName = localStorage.getItem('bingoName');
+        heading.textContent = bingoName; // Update the h1 heading
+
+        // Set the free space text
+        freeSpaceCell.innerText = 'FREE SPACE';
+
+        // Close the modal
+        bingoItemsModal.style.display = 'none';
+    } else {
+        console.error("Error retrieving bingo items:", data.error);
+    }
 });
 
 // When the user clicks anywhere outside the modal, close it
