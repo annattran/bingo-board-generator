@@ -185,20 +185,19 @@ submitNameForm.addEventListener('submit', async (e) => {
 
 // Function to add goal to Firebase
 async function addGoalToBackend(goalValue) {
-    const userId = auth.currentUser ? auth.currentUser.uid : null;
+    const user = auth.currentUser;
     const listId = localStorage.getItem('listId'); // Retrieve listId
 
-    if (!userId || !listId) {
+    if (!user || !listId) {
         console.error("Missing userId or listId");
         return false;
     }
 
     try {
-        const response = await fetch(`/users/${userId}/bingo-lists/${listId}/items`, {
+        const idToken = await user.getIdToken();
+        const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
             body: JSON.stringify({ bingoItem: goalValue })
         });
 

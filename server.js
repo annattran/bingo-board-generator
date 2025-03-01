@@ -38,7 +38,7 @@ const verifyIdToken = async (req, res, next) => {
 };
 
 // 📌 1️⃣ Create a new Bingo List under a User
-app.post('/users/:userId/bingo-lists', async (req, res) => {
+app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
     try {
         const { bingoName } = req.body;
         const userId = req.params.userId;
@@ -61,7 +61,7 @@ app.post('/users/:userId/bingo-lists', async (req, res) => {
 });
 
 // 📌 2️⃣ Add Items to a Bingo List (max 25 items)
-app.post('/users/:userId/bingo-lists/:listId/items', async (req, res) => {
+app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
     try {
         const { bingoItem } = req.body;
         const { userId, listId } = req.params;
@@ -78,7 +78,7 @@ app.post('/users/:userId/bingo-lists/:listId/items', async (req, res) => {
         }
 
         const listData = listDoc.data();
-        if (listData.bingoItems.length >= 25) {
+        if (listData.bingoItems.length >= 24) {
             return res.status(400).json({ error: 'Cannot add more than 25 items' });
         }
 
