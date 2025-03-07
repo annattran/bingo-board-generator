@@ -439,26 +439,42 @@ cancelButton.addEventListener('click', function () {
 async function loadUserLists(idToken) {
     const user = auth.currentUser;
     if (!user) {
-        console.error('No user is signed in.');
-        return;
+        console.error('No user signed in.');
+        return false;
     }
 
     try {
         const response = await fetch(`/users/${user.uid}/bingo-lists`, {
+            method: 'GET',
             headers: { 'Authorization': `Bearer ${idToken}` }
         });
 
+        const data = await response.json();
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error(errorData.error || 'Error fetching bingo lists.');
-            return;
+            console.error("Error retrieving bingo lists:", data.error);
+            return false;
         }
 
-        const data = await response.json();
-        displayBingoLists(data.bingoLists, idToken);
-        return true;
+        // Assuming data.lists contains the user's bingo lists
+        const lists = data.bingoLists;
+
+        if (lists && lists.length > 0) {
+            // Select the first list automatically
+            const firstList = lists[0];
+            localStorage.setItem('listId', firstList.id); // Save the selected listId
+            localStorage.setItem('bingoName', firstList.bingoName); // Save the list name
+
+            // Update the UI to reflect the selected list
+            displayBingoLists(data.bingoLists, idToken);
+
+            return true; // Indicating that the user has a list
+        } else {
+            console.log('No bingo lists found.');
+            return false;
+        }
     } catch (error) {
-        console.error('Error retrieving bingo lists:', error);
+        console.error('Error fetching user bingo lists:', error);
+        return false;
     }
 }
 
