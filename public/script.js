@@ -35,6 +35,7 @@ const togglePasswordButtons = [
 ];
 const navButtonsContainer = document.getElementById("navButtonsContainer");
 const listContainer = document.getElementById('bingoLists');
+const selectListContainer = document.querySelector('.selectListContainer');
 
 function toggleUI(userSignedIn, hasList = false) {
     // Handle UI visibility based on user sign-in status
@@ -49,6 +50,9 @@ function toggleUI(userSignedIn, hasList = false) {
 
     // Toggle visibility of grocery form
     bingoBoard.classList.toggle('hidden', !showBingoBoard);
+
+    // Toggle visibility of select list
+    selectListContainer.classList.toggle('hidden', !showBingoBoard);
 }
 
 onAuthStateChanged(auth, async (user) => {
