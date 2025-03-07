@@ -179,6 +179,28 @@ app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async
     }
 });
 
+// 📌 5️⃣ Get all Bingo Lists under a User
+app.get('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const listsSnapshot = await db.collection('users').doc(userId).collection('bingoLists').get();
+
+        if (listsSnapshot.empty) {
+            return res.status(404).json({ error: 'No bingo lists found for this user' });
+        }
+
+        const bingoLists = listsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        res.json({ bingoLists });
+    } catch (error) {
+        console.error('Error fetching bingo lists:', error);
+        res.status(500).json({ error: 'Failed to retrieve bingo lists' });
+    }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -56,7 +56,7 @@ onAuthStateChanged(auth, async (user) => {
         console.log("User already signed in:", user);
         const idToken = await user.getIdToken();
         console.log('ID Token:', idToken);
-        // loadUserLists(idToken);
+        await loadUserLists(idToken);
     } else {
         console.log("No user signed in.");
     }
@@ -414,3 +414,48 @@ confirmButton.addEventListener('click', function () {
 cancelButton.addEventListener('click', function () {
     updateItemCompletion(false); // Mark the item as incomplete
 });
+
+async function loadUserLists(idToken) {
+    const user = auth.currentUser;
+    if (!user) {
+        console.error('No user is signed in.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/users/${user.uid}/bingo-lists`, {
+            headers: { 'Authorization': `Bearer ${idToken}` }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error(errorData.error || 'Error fetching bingo lists.');
+            return;
+        }
+
+        const data = await response.json();
+        displayBingoLists(data.bingoLists);
+    } catch (error) {
+        console.error('Error retrieving bingo lists:', error);
+    }
+}
+
+function displayBingoLists(bingoLists) {
+    const listContainer = document.getElementById('bingoLists');
+    listContainer.innerHTML = '';
+
+    if (!bingoLists.length) {
+        return;
+    }
+
+    bingoLists.forEach(list => {
+        const option = document.createElement('option');
+        option.value = list.id;
+        option.textContent = list.bingoName;
+        option.addEventListener('click', () => {
+            localStorage.setItem('listId', list.id);
+            console.log(`Selected Bingo List: ${list.bingoName}`);
+        });
+        listContainer.appendChild(option);
+    });
+}
