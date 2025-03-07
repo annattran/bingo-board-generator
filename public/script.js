@@ -184,6 +184,9 @@ submitNameForm.addEventListener('submit', async (e) => {
             bingoNameModal.style.display = 'none';
             bingoItemsModal.style.display = 'block';
 
+            // Reset the form
+            submitNameForm.reset(); // Reset the bingoName field
+
             // Update the select dropdown with the newly created list
             updateSelectDropdown(data.id, bingoName);
         } else {
@@ -313,6 +316,8 @@ async function loadItemsForList() {
         return;
     }
 
+    bingoGoal.removeAttribute('disabled');
+    bingoList.innerHTML = '';
     document.querySelectorAll('.bingo-cell:not(.free-space)').forEach((item) => {
         item.innerHTML = '';
     });
