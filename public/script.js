@@ -342,3 +342,75 @@ window.addEventListener('click', (event) => {
         bingoItemsModal.style.display = 'none';
     }
 });
+
+// Get the parent container that holds the bingo items
+const editModal = document.getElementById('edit-modal');
+const confirmButton = document.getElementById('mark-completed');
+const cancelButton = document.getElementById('mark-incomplete');
+
+// Variable to store the item ID and reference
+let selectedItemId = null;
+
+// Event delegation: Listen for click events on the parent container
+bingoBoard.addEventListener('click', function (event) {
+    // Check if the clicked element is an edit button
+    if (event.target && event.target.classList.contains('edit-item')) {
+        // Get the item ID from the closest parent <li> element's data-item-id attribute
+        selectedItemId = event.target.closest('div').getAttribute('data-id');
+
+        // Show the modal
+        editModal.style.display = 'block';
+    }
+});
+
+// Function to mark an item as completed or incomplete
+async function updateItemCompletion(completedStatus) {
+    if (selectedItemId) {
+        const user = auth.currentUser; // Get the current user
+        const userId = user ? user.uid : null; // User ID from Firebase auth
+        const listId = localStorage.getItem('listId'); // List ID from localStorage
+
+        if (!userId || !listId) {
+            console.error('Missing userId or listId');
+            return;
+        }
+
+        try {
+            // Send a request to update the item completion status
+            const response = await fetch(`/users/${userId}/bingo-lists/${listId}/items/${selectedItemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await user.getIdToken()}`,  // Include the Firebase ID token
+                },
+                body: JSON.stringify({
+                    completed: completedStatus,  // Mark the item as completed or incomplete
+                }),
+            });
+
+            if (response.ok) {
+                const action = completedStatus ? 'completed' : 'incomplete';
+                document.querySelector(`div[data-id="${selectedItemId}"]`).setAttribute('data-completed', completedStatus ? 'true' : 'false');
+                console.log(`Item marked as ${action}`);
+            } else {
+                alert(`Error marking item as ${completedStatus ? 'completed' : 'incomplete'}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert(`Failed to mark item as ${completedStatus ? 'completed' : 'incomplete'}`);
+        }
+    }
+
+    // Close the modal
+    editModal.style.display = 'none';
+}
+
+// Event listener for confirming completion
+confirmButton.addEventListener('click', function () {
+    updateItemCompletion(true); // Mark the item as completed
+});
+
+// Event listener for canceling the action (marking as incomplete)
+cancelButton.addEventListener('click', function () {
+    updateItemCompletion(false); // Mark the item as incomplete
+});

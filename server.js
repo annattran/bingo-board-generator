@@ -83,12 +83,24 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
         }
 
         // Add the bingo item with its order number and default completed value
-        listData.bingoItems.push({
+        const newItemRef = await listRef.collection('items').add({
             item: bingoItem,
             order: order,
-            completed: false // Default completed value
+            completed: false, // Default completed value
         });
 
+        // Store the Firestore document ID in the bingoItems array
+        const newItem = {
+            item: bingoItem,
+            order: order,
+            completed: false,
+            id: newItemRef.id  // Store Firestore document ID for future reference
+        };
+
+        // Add the new item to the bingoItems array in the bingo list
+        listData.bingoItems.push(newItem);
+
+        // Update the bingo list in Firestore
         await listRef.update({ bingoItems: listData.bingoItems });
 
         res.json({ message: 'Item added', bingoItems: listData.bingoItems });
@@ -110,21 +122,60 @@ app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, r
             return res.status(404).json({ error: 'Bingo list not found' });
         }
 
-        const bingoItems = bingoListDoc.data().bingoItems || []; // Fetch the bingo items array
-
-        // Include the Firestore document ID for each bingo item
-        const itemsWithId = bingoItems.map((item, index) => ({
-            id: bingoListRef.collection('items').doc().id,  // Get Firestore ID for the item
-            bingoItem: item.item,
-            order: item.order,
-            completed: item.completed
+        // Fetch the bingo items from Firestore
+        const itemsSnapshot = await bingoListRef.collection('items').get();
+        const itemsWithId = itemsSnapshot.docs.map(doc => ({
+            id: doc.id,  // Use Firestore document ID
+            bingoItem: doc.data().item,
+            order: doc.data().order,
+            completed: doc.data().completed
         }));
 
-        // Return the items with their IDs wrapped in an object
         res.json({ items: itemsWithId });
     } catch (error) {
         console.error('Error fetching bingo items:', error);
         res.status(500).json({ error: 'Failed to retrieve bingo items' });
+    }
+});
+
+// 📌 4️⃣ Edit a Bingo Item (update its name or order)
+app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async (req, res) => {
+    const { userId, listId, itemId } = req.params;
+    const { completed } = req.body;
+
+    if (completed === undefined) {
+        return res.status(400).json({ error: 'Completed status is required' });
+    }
+
+    try {
+        const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
+        const itemRef = bingoListRef.collection('items').doc(itemId);
+        const itemDoc = await itemRef.get();
+
+        if (!itemDoc.exists) {
+            return res.status(404).json({ error: 'Bingo item not found' });
+        }
+
+        // Update Firestore document directly
+        await itemRef.update({ completed });
+
+        // Also update `bingoItems` array in `bingoLists`
+        const bingoListDoc = await bingoListRef.get();
+        if (bingoListDoc.exists) {
+            const listData = bingoListDoc.data();
+            const bingoItems = listData.bingoItems || [];
+
+            const itemIndex = bingoItems.findIndex(item => item.id === itemId);
+            if (itemIndex !== -1) {
+                bingoItems[itemIndex].completed = completed;
+                await bingoListRef.update({ bingoItems });
+            }
+        }
+
+        res.json({ message: 'Bingo item updated' });
+    } catch (error) {
+        console.error('Error updating bingo item:', error);
+        res.status(500).json({ error: 'Failed to update bingo item' });
     }
 });
 
