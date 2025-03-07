@@ -183,6 +183,9 @@ submitNameForm.addEventListener('submit', async (e) => {
 
             bingoNameModal.style.display = 'none';
             bingoItemsModal.style.display = 'block';
+
+            // Update the select dropdown with the newly created list
+            updateSelectDropdown(data.id, bingoName);
         } else {
             const errorData = await res.json();
             console.log(errorData.error || 'Error creating list.');
@@ -191,6 +194,18 @@ submitNameForm.addEventListener('submit', async (e) => {
         console.log(`Error creating new list: ${error}`);
     }
 });
+
+// Function to update the select dropdown with the new list
+function updateSelectDropdown(listId, bingoName) {
+    const option = document.createElement('option');
+    option.value = listId;
+    option.setAttribute('data-name', bingoName);
+    option.textContent = bingoName;
+    listContainer.appendChild(option);
+
+    // Optionally, select the new list as the default
+    listContainer.value = listId;
+}
 
 // Function to check the number of items and enable/disable submit button
 function checkItemCount() {
