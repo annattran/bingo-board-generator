@@ -306,7 +306,7 @@ async function loadItemsForList() {
             return;
         }
 
-        document.querySelectorAll('.bingo-cell').forEach((item, index) => {
+        document.querySelectorAll('.bingo-cell:not(.free-space)').forEach((item) => {
             item.innerHTML = '';
         });
 
@@ -468,6 +468,7 @@ function displayBingoLists(bingoLists, idToken) {
     bingoLists.forEach(list => {
         const option = document.createElement('option');
         option.value = list.id;
+        option.setAttribute('data-name', list.bingoName);
         option.textContent = list.bingoName;
         listContainer.appendChild(option);
     });
@@ -475,8 +476,12 @@ function displayBingoLists(bingoLists, idToken) {
 }
 
 listContainer.addEventListener('change', async (e) => {
-    const selectedListId = e.target.value;
+    const selectedOption = e.target.selectedOptions[0]; // Get the selected option
+    const selectedListId = selectedOption.value; // Get the value of the selected option
+    const selectedListName = selectedOption.getAttribute('data-name'); // Get the 'data-name' attribute
+
     localStorage.setItem('listId', selectedListId);
-    console.log(`Selected Bingo List: ${selectedListId}`);
+    localStorage.setItem('bingoName', selectedListName);
+    console.log(`Selected Bingo List: ${selectedListName}: ${selectedListId}`);
     loadItemsForList();
 });
