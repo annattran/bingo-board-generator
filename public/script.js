@@ -60,6 +60,7 @@ onAuthStateChanged(auth, async (user) => {
         toggleUI(user, hasList);
     } else {
         console.log("No user signed in.");
+        toggleUI(false);
     }
 });
 
@@ -458,7 +459,6 @@ async function loadUserLists(idToken) {
 }
 
 function displayBingoLists(bingoLists, idToken) {
-    document.querySelector('.selectListContainer').classList.remove('hidden');
     listContainer.innerHTML = '';
 
     if (!bingoLists.length) {
