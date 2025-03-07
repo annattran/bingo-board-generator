@@ -298,6 +298,10 @@ async function loadItemsForList() {
         return;
     }
 
+    document.querySelectorAll('.bingo-cell:not(.free-space)').forEach((item) => {
+        item.innerHTML = '';
+    });
+
     const idToken = await user.getIdToken();
     try {
         const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
@@ -310,10 +314,6 @@ async function loadItemsForList() {
             console.error("Error retrieving bingo items:", data.error);
             return;
         }
-
-        document.querySelectorAll('.bingo-cell:not(.free-space)').forEach((item) => {
-            item.innerHTML = '';
-        });
 
         // Sort items by random order
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
