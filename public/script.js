@@ -34,6 +34,7 @@ const togglePasswordButtons = [
     document.getElementById('toggleSignupPassword')
 ];
 const navButtonsContainer = document.getElementById("navButtonsContainer");
+const listContainer = document.getElementById('bingoLists');
 
 function toggleUI(userSignedIn, hasList = true) {
     // Handle UI visibility based on user sign-in status
@@ -280,30 +281,36 @@ bingoGoal.addEventListener('keydown', async (e) => {
     }
 });
 
-// When the user submits the form
-submitListForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
-
-    if (items.length < 24) {
-        alert('You need to add at least 24 items (excluding the free space) before submitting.');
+async function loadItemsForList() {
+    const user = auth.currentUser;
+    if (!user) {
+        console.error('No user is signed in.');
         return;
     }
 
-    // Fetch the bingo items from Firestore, sorted by randomOrder
-    const user = auth.currentUser;
     const listId = localStorage.getItem('listId');
-    const idToken = await user.getIdToken();
-    const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${idToken}`
-        }
-    });
+    if (!listId) {
+        console.error('No list selected.');
+        return;
+    }
 
-    const data = await response.json();
-    if (response.ok) {
+    const idToken = await user.getIdToken();
+    try {
+        const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${idToken}` }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            console.error("Error retrieving bingo items:", data.error);
+            return;
+        }
+
+        document.querySelectorAll('.bingo-cell').forEach((item, index) => {
+            item.innerHTML = '';
+        });
+
         // Sort items by random order
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
         console.log(sortedItems);
@@ -314,25 +321,38 @@ submitListForm.addEventListener('submit', async (e) => {
             const div = document.createElement('div');
             div.classList.add('edit-item');
             div.setAttribute('data-id', item.id);
-            div.setAttribute('data-completed', item.completed)
+            div.setAttribute('data-completed', item.completed);
             div.textContent = item.bingoItem;
-            cells[index].append(div); // Place the item in the grid
+            cells[index].append(div);
         });
 
         console.log("Bingo board updated!");
 
-        // Get the bingo name from localStorage and update the h1 heading
+        // Update the heading with the bingo list name
         const bingoName = localStorage.getItem('bingoName');
-        heading.textContent = bingoName; // Update the h1 heading
+        heading.textContent = bingoName || 'Bingo Board';
 
         // Set the free space text
         freeSpaceCell.innerText = 'FREE SPACE';
 
         // Close the modal
         bingoItemsModal.style.display = 'none';
-    } else {
-        console.error("Error retrieving bingo items:", data.error);
+    } catch (error) {
+        console.error("Error fetching bingo items:", error);
     }
+}
+
+// Call loadItemsForList when submitting the form
+submitListForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
+
+    if (items.length < 24) {
+        alert('You need to add at least 24 items (excluding the free space) before submitting.');
+        return;
+    }
+
+    await loadItemsForList();
 });
 
 // When the user clicks anywhere outside the modal, close it
@@ -434,14 +454,13 @@ async function loadUserLists(idToken) {
         }
 
         const data = await response.json();
-        displayBingoLists(data.bingoLists);
+        displayBingoLists(data.bingoLists, idToken);
     } catch (error) {
         console.error('Error retrieving bingo lists:', error);
     }
 }
 
-function displayBingoLists(bingoLists) {
-    const listContainer = document.getElementById('bingoLists');
+function displayBingoLists(bingoLists, idToken) {
     listContainer.innerHTML = '';
 
     if (!bingoLists.length) {
@@ -452,10 +471,14 @@ function displayBingoLists(bingoLists) {
         const option = document.createElement('option');
         option.value = list.id;
         option.textContent = list.bingoName;
-        option.addEventListener('click', () => {
-            localStorage.setItem('listId', list.id);
-            console.log(`Selected Bingo List: ${list.bingoName}`);
-        });
         listContainer.appendChild(option);
     });
+    loadItemsForList();
 }
+
+listContainer.addEventListener('change', async (e) => {
+    const selectedListId = e.target.value;
+    localStorage.setItem('listId', selectedListId);
+    console.log(`Selected Bingo List: ${selectedListId}`);
+    loadItemsForList();
+});
