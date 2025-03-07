@@ -36,7 +36,7 @@ const togglePasswordButtons = [
 const navButtonsContainer = document.getElementById("navButtonsContainer");
 const listContainer = document.getElementById('bingoLists');
 
-function toggleUI(userSignedIn, hasList = true) {
+function toggleUI(userSignedIn, hasList = false) {
     // Handle UI visibility based on user sign-in status
     const hideAuth = userSignedIn;
     const showBingoBoard = userSignedIn && hasList;
@@ -52,12 +52,12 @@ function toggleUI(userSignedIn, hasList = true) {
 }
 
 onAuthStateChanged(auth, async (user) => {
-    toggleUI(user);
     if (user) {
         console.log("User already signed in:", user);
         const idToken = await user.getIdToken();
         console.log('ID Token:', idToken);
-        await loadUserLists(idToken);
+        const hasList = await loadUserLists(idToken);
+        toggleUI(user, hasList);
     } else {
         console.log("No user signed in.");
     }
@@ -140,7 +140,6 @@ const bingoGoal = document.getElementById('bingo-goal');
 const bingoList = document.getElementById('bingo-list');
 const submitListForm = document.getElementById('bingo-list-form');
 const generateButton = document.getElementById('submit-list');
-const freeSpaceCell = document.querySelector('.free-space');
 
 // When the "create" button is clicked, show the modal
 createButton.addEventListener('click', () => {
@@ -332,9 +331,6 @@ async function loadItemsForList() {
         const bingoName = localStorage.getItem('bingoName');
         heading.textContent = bingoName || 'Bingo Board';
 
-        // Set the free space text
-        freeSpaceCell.innerText = 'FREE SPACE';
-
         // Close the modal
         bingoItemsModal.style.display = 'none';
     } catch (error) {
@@ -455,12 +451,14 @@ async function loadUserLists(idToken) {
 
         const data = await response.json();
         displayBingoLists(data.bingoLists, idToken);
+        return true;
     } catch (error) {
         console.error('Error retrieving bingo lists:', error);
     }
 }
 
 function displayBingoLists(bingoLists, idToken) {
+    document.querySelector('.selectListContainer').classList.remove('hidden');
     listContainer.innerHTML = '';
 
     if (!bingoLists.length) {
