@@ -192,6 +192,7 @@ input:disabled {
     display: flex;
     justify-content: center;
     align-items: center;
+    word-break: break-word;
 }
 
 .bingo-cell .edit-item[data-completed="true"] {

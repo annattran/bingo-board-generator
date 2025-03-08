@@ -76,7 +76,12 @@ logoutButton.addEventListener('click', async () => {
         toggleUI(false);
         heading.textContent = 'Bingo Board Generator';
     } catch (error) {
-        console.log(`Error signing out: ${error}`);
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: `Error signing out: ${error}`,
+        });
     }
 });
 
@@ -95,7 +100,12 @@ emailForm.addEventListener('submit', async (e) => {
         toggleUI(true);
         // loadUserLists(idToken);
     } catch (error) {
-        console.log(`Error during email authentication: ${error}`);
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: `Error during email authentication: ${error}`,
+        });
     }
 });
 
@@ -117,7 +127,12 @@ signupForm.addEventListener('submit', async (e) => {
         await setDoc(doc(db, 'users', user.uid), { email: user.email, createdAt: new Date().toISOString() });
         console.log("User added to Firestore");
     } catch (error) {
-        console.log(`Error during signup or sign-in: ${error}`);
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: `Error during signup or sign-in: ${error}`,
+        });
     }
 });
 
@@ -162,7 +177,12 @@ submitNameForm.addEventListener('submit', async (e) => {
 
     const user = auth.currentUser;
     if (!user) {
-        console.log('Please log in first.');
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Please log in first.',
+        });
         return;
     }
 
@@ -176,7 +196,12 @@ submitNameForm.addEventListener('submit', async (e) => {
 
         if (res.ok) {
             const data = await res.json();
-            console.log(`'${bingoName}' has been created successfully!`);
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                title: 'New list created!',
+                text: `'${bingoName}' has been created successfully!`,
+            });
 
             localStorage.setItem('listId', data.id); // Store listId for future use
             localStorage.setItem('bingoName', bingoName); // Store the bingo name
@@ -191,10 +216,20 @@ submitNameForm.addEventListener('submit', async (e) => {
             updateSelectDropdown(data.id, bingoName);
         } else {
             const errorData = await res.json();
-            console.log(errorData.error || 'Error creating list.');
+            Swal.fire({
+                toast: true,
+                icon: 'error',
+                title: 'Oops...',
+                text: errorData.error || 'Error creating list.',
+            });
         }
     } catch (error) {
-        console.log(`Error creating new list: ${error}`);
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: `Error creating new list: ${error}`,
+        });
     }
 });
 
@@ -237,7 +272,12 @@ async function addGoalToBackend(goalValue) {
 
     const items = document.querySelectorAll('#bingo-list li');
     if (items.length >= 24) {  // Ensure limit is respected before sending request
-        alert("You cannot add more than 24 items.");
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: "You cannot add more than 24 items.",
+        });
         return false;
     }
 
@@ -264,11 +304,21 @@ async function addGoalToBackend(goalValue) {
             console.log("Goal added:", addData);
             return true;
         } else {
-            console.error("Error:", addData.error);
+            Swal.fire({
+                toast: true,
+                icon: 'error',
+                title: 'Oops...',
+                text: `Error: ${addData.error}`,
+            });
             return false;
         }
     } catch (error) {
-        console.error("Request failed:", error);
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: `Request failed: ${error}`,
+        });
         return false;
     } finally {
         checkItemCount(); // Ensure the function runs regardless of the outcome
@@ -291,7 +341,12 @@ bingoGoal.addEventListener('keydown', async (e) => {
 
         const items = document.querySelectorAll('#bingo-list li');
         if (items.length >= 24) {  // Ensure limit is 24
-            alert("You've reached the max number of items!");
+            Swal.fire({
+                toast: true,
+                icon: 'error',
+                title: 'Oops...',
+                text: "You've reached the max number of items!",
+            });
             return;
         }
 
@@ -304,9 +359,8 @@ bingoGoal.addEventListener('keydown', async (e) => {
             listItem.textContent = goalValue;
             bingoList.appendChild(listItem);
             bingoGoal.value = '';
+            checkItemCount(); // Add this here to ensure the count is updated
         }
-
-        checkItemCount();
     }
 });
 
@@ -377,6 +431,8 @@ async function loadItemsForList() {
 
         // Close the modal
         bingoItemsModal.style.display = 'none';
+
+        toggleUI(true, true);
     } catch (error) {
         console.error("Error fetching bingo items:", error);
     }
@@ -388,7 +444,12 @@ submitListForm.addEventListener('submit', async (e) => {
     const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
 
     if (items.length !== 24) {
-        alert('You need to add exactly 24 items (excluding the free space) before submitting.');
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Oops...',
+            text: 'You need to add exactly 24 items (excluding the free space) before submitting.',
+        });
         return;
     }
 
@@ -451,13 +512,28 @@ async function updateItemCompletion(completedStatus) {
             if (response.ok) {
                 const action = completedStatus ? 'completed' : 'incomplete';
                 document.querySelector(`div[data-id="${selectedItemId}"]`).setAttribute('data-completed', completedStatus ? 'true' : 'false');
-                console.log(`Item marked as ${action}`);
+                Swal.fire({
+                    toast: true,
+                    icon: 'success',
+                    title: 'Item updated!',
+                    text: `Item marked as ${action}`,
+                });
             } else {
-                alert(`Error marking item as ${completedStatus ? 'completed' : 'incomplete'}`);
+                Swal.fire({
+                    toast: true,
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: `Error marking item as ${completedStatus ? 'completed' : 'incomplete'}`,
+                });
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(`Failed to mark item as ${completedStatus ? 'completed' : 'incomplete'}`);
+            Swal.fire({
+                toast: true,
+                icon: 'error',
+                title: 'Oops...',
+                text: `Failed to mark item as ${completedStatus ? 'completed' : 'incomplete'}`,
+            });
         }
     }
 
