@@ -5,3 +5,8 @@
 firebase-admin.json
 # Local Netlify folder
 .netlify
+# Ignore all private keys and sensitive data files
+functions/*.pem
+functions/.env
+# Node modules
+node_modules/
