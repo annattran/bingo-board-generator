@@ -213,10 +213,10 @@ function updateSelectDropdown(listId, bingoName) {
 // Function to check the number of items and enable/disable submit button
 function checkItemCount() {
     const items = document.querySelectorAll('#bingo-list li'); // Get all added items
-    if (items.length >= 23) {
+    if (items.length >= 24) {
         bingoGoal.setAttribute('disabled', 'true');
         generateButton.removeAttribute('disabled');
-    } else {
+    } else if (items.length < 24) {
         bingoGoal.removeAttribute('disabled');
         generateButton.setAttribute('disabled', 'true');
     }
@@ -236,8 +236,8 @@ async function addGoalToBackend(goalValue) {
     }
 
     const items = document.querySelectorAll('#bingo-list li');
-    if (items.length >= 23) {  // Ensure limit is respected before sending request
-        console.log("Cannot add more than 24 items.");
+    if (items.length >= 24) {  // Ensure limit is respected before sending request
+        alert("You cannot add more than 24 items.");
         return false;
     }
 
@@ -290,7 +290,7 @@ bingoGoal.addEventListener('keydown', async (e) => {
         e.preventDefault();
 
         const items = document.querySelectorAll('#bingo-list li');
-        if (items.length >= 23) {  // Ensure limit is 24
+        if (items.length >= 24) {  // Ensure limit is 24
             alert("You've reached the max number of items!");
             return;
         }
@@ -342,6 +342,17 @@ async function loadItemsForList() {
             return;
         }
 
+        if (data.items.length < 24) {
+            data.items.forEach((item) => {
+                console.log(item)
+                const listItem = document.createElement('li');
+                listItem.innerHTML = item.bingoItem;
+                bingoList.append(listItem);
+            })
+            bingoItemsModal.style.display = 'block';
+            return;
+        }
+
         // Sort items by random order
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
         console.log(sortedItems);
@@ -377,7 +388,7 @@ submitListForm.addEventListener('submit', async (e) => {
     const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
 
     if (items.length !== 24) {
-        alert('You need to add at least 24 items (excluding the free space) before submitting.');
+        alert('You need to add exactly 24 items (excluding the free space) before submitting.');
         return;
     }
 

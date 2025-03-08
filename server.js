@@ -49,7 +49,8 @@ app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
 
         const newBingoList = {
             bingoName,
-            bingoItems: [] // Starts empty, to be filled later
+            bingoItems: [],
+            isComplete: false  // New flag to track completion status
         };
 
         const bingoListRef = await db.collection('users').doc(userId).collection('bingoLists').add(newBingoList);
@@ -60,13 +61,13 @@ app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
     }
 });
 
-// 📌 2️⃣ Add Items to a Bingo List (max 25 items)
+// 📌 2️⃣ Add Items to a Bingo List (max 24 items)
 app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
     try {
-        const { bingoItem, order } = req.body; // Now expecting an 'order' field
+        const { bingoItem, order } = req.body;
         const { userId, listId } = req.params;
 
-        if (!bingoItem || !order) {
+        if (!bingoItem || order === undefined) {
             return res.status(400).json({ error: 'Bingo item and order are required' });
         }
 
@@ -78,32 +79,34 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
         }
 
         const listData = listDoc.data();
-        if (listData.bingoItems.length >= 23) {
+        if (listData.bingoItems.length >= 24) { // ✅ Ensures 24 is the max
             return res.status(400).json({ error: 'Cannot add more than 24 items' });
         }
 
-        // Add the bingo item with its order number and default completed value
+        // Add the bingo item to Firestore
         const newItemRef = await listRef.collection('items').add({
             item: bingoItem,
-            order: order,
-            completed: false, // Default completed value
+            order,
+            completed: false
         });
 
-        // Store the Firestore document ID in the bingoItems array
+        // Add new item to the list and check if it reaches 24
         const newItem = {
             item: bingoItem,
-            order: order,
+            order,
             completed: false,
-            id: newItemRef.id  // Store Firestore document ID for future reference
+            id: newItemRef.id
         };
 
-        // Add the new item to the bingoItems array in the bingo list
-        listData.bingoItems.push(newItem);
+        const updatedBingoItems = [...listData.bingoItems, newItem];
+        const isComplete = updatedBingoItems.length === 24; // ✅ Marks complete only when exactly 24
 
-        // Update the bingo list in Firestore
-        await listRef.update({ bingoItems: listData.bingoItems });
+        await listRef.update({
+            bingoItems: updatedBingoItems,
+            isComplete
+        });
 
-        res.json({ message: 'Item added', bingoItems: listData.bingoItems });
+        res.json({ message: 'Item added', bingoItems: updatedBingoItems });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
