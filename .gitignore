@@ -3,3 +3,5 @@
 
 # Firebase service account credentials
 firebase-admin.json
+# Local Netlify folder
+.netlify

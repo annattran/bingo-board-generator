@@ -188,7 +188,7 @@ submitNameForm.addEventListener('submit', async (e) => {
 
     try {
         const idToken = await user.getIdToken();
-        const res = await fetch(`/users/${user.uid}/bingo-lists`, {
+        const res = await fetch(`/.netlify/functions/createBingoList`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
             body: JSON.stringify({ bingoName, bingoItems: [] })
@@ -293,7 +293,7 @@ async function addGoalToBackend(goalValue) {
         const randomOrder = orderList.shift();
 
         // Add the goal with the assigned order to the backend
-        const addResponse = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
+        const addResponse = await fetch(`/.netlify/functions/addItemToBingoList`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
             body: JSON.stringify({ bingoItem: goalValue, order: randomOrder })
@@ -385,7 +385,7 @@ async function loadItemsForList() {
 
     const idToken = await user.getIdToken();
     try {
-        const response = await fetch(`/users/${user.uid}/bingo-lists/${listId}/items`, {
+        const response = await fetch(`/.netlify/functions/getBingoItems`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${idToken}` }
         });
@@ -498,7 +498,7 @@ async function updateItemCompletion(completedStatus) {
 
         try {
             // Send a request to update the item completion status
-            const response = await fetch(`/users/${userId}/bingo-lists/${listId}/items/${selectedItemId}`, {
+            const response = await fetch(`/.netlify/functions/editBingoItem`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -559,7 +559,7 @@ async function loadUserLists(idToken) {
     }
 
     try {
-        const response = await fetch(`/users/${user.uid}/bingo-lists`, {
+        const response = await fetch(`/.netlify/functions/getBingoLists`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${idToken}` }
         });
