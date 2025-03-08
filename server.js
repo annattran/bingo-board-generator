@@ -78,7 +78,7 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
         }
 
         const listData = listDoc.data();
-        if (listData.bingoItems.length >= 25) {
+        if (listData.bingoItems.length >= 23) {
             return res.status(400).json({ error: 'Cannot add more than 24 items' });
         }
 

@@ -213,10 +213,11 @@ function updateSelectDropdown(listId, bingoName) {
 // Function to check the number of items and enable/disable submit button
 function checkItemCount() {
     const items = document.querySelectorAll('#bingo-list li'); // Get all added items
-    if (items.length === 24) {
+    if (items.length >= 23) {
         bingoGoal.setAttribute('disabled', 'true');
         generateButton.removeAttribute('disabled');
     } else {
+        bingoGoal.removeAttribute('disabled');
         generateButton.setAttribute('disabled', 'true');
     }
 }
@@ -231,6 +232,12 @@ async function addGoalToBackend(goalValue) {
 
     if (!user || !listId) {
         console.error("Missing userId or listId");
+        return false;
+    }
+
+    const items = document.querySelectorAll('#bingo-list li');
+    if (items.length >= 23) {  // Ensure limit is respected before sending request
+        console.log("Cannot add more than 24 items.");
         return false;
     }
 
@@ -283,7 +290,7 @@ bingoGoal.addEventListener('keydown', async (e) => {
         e.preventDefault();
 
         const items = document.querySelectorAll('#bingo-list li');
-        if (items.length >= 25) {
+        if (items.length >= 23) {  // Ensure limit is 24
             alert("You've reached the max number of items!");
             return;
         }
@@ -338,6 +345,7 @@ async function loadItemsForList() {
         // Sort items by random order
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
         console.log(sortedItems);
+        console.log(sortedItems.length);
 
         // Update the bingo board with sorted items
         const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
@@ -368,7 +376,7 @@ submitListForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
 
-    if (items.length < 24) {
+    if (items.length !== 24) {
         alert('You need to add at least 24 items (excluding the free space) before submitting.');
         return;
     }
