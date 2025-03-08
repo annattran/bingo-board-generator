@@ -1,6 +1,6 @@
 [build]
   publish = "public"
-  functions = "netlify-functions"  # Path to your functions directory
+  functions = "netlify-functions-build"
 
 [dev]
   functions = "netlify-functions"
