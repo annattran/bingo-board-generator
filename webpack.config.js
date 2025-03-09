@@ -11,8 +11,11 @@ module.exports = {
                 // Exclude node_modules except for packages that need transpiling
                 exclude: /node_modules\/(?!(firebase-admin|google-logging-utils|@fastify\/busboy)\/).*/,
                 use: {
-                    loader: 'babel-loader'
+                    loader: 'babel-loader',
                     // Babel will use your babel.config.js or .babelrc automatically
+                    options: {
+                        presets: ['@babel/preset-env'],
+                    }
                 }
             }
         ]
