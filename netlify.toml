@@ -2,6 +2,7 @@
   command = "npm run build"
   publish = "public"
   functions = "netlify-functions-build"
+  NODE_VERSION = "18.9.0"
 
 [dev]
   functions = "netlify-functions"
