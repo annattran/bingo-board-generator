@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "netlify-lambda build netlify-functions netlify-functions-build --config webpack.config.js",
+    "build": "netlify-lambda build netlify-functions --config webpack.config.js",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

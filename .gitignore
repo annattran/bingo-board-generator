@@ -10,3 +10,5 @@ functions/*.pem
 functions/.env
 # Node modules
 node_modules/
+# Build folder
+netlify-functions-build/
