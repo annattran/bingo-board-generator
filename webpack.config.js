@@ -15,6 +15,7 @@ module.exports = {
                     // Babel will use your babel.config.js or .babelrc automatically
                     options: {
                         presets: ['@babel/preset-env'],
+                        plugins: ['@babel/plugin-proposal-optional-chaining'], // Add this plugin explicitly
                     }
                 }
             }
