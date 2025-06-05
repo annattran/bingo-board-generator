@@ -109,6 +109,7 @@ form {
     position: absolute;
     right: 10px;
     min-width: auto;
+    color: #888;
 }
 
 input,
@@ -315,6 +316,7 @@ input:disabled {
 @media(max-width:480px) {
     .bingo-cell {
         height: 90px;
+        width: calc(100% / 5);
     }
 
     button {

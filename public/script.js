@@ -144,10 +144,22 @@ function toggleAuthView(showLogin) {
 toggleLoginViewBtns.forEach(btn => btn.addEventListener("click", () => toggleAuthView(true)));
 toggleSignupViewBtns.forEach(btn => btn.addEventListener("click", () => toggleAuthView(false)));
 
-togglePasswordButtons.forEach(button => button.addEventListener('click', (e) => {
-    const passwordField = e.target.previousElementSibling;
-    passwordField.type = passwordField.type === "password" ? "text" : "password";
-}));
+togglePasswordButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+        const icon = button.querySelector('i'); // safer than e.target
+        const passwordField = button.previousElementSibling;
+
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordField.type = "password";
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+});
 
 
 // Get modal element
@@ -232,7 +244,7 @@ submitNameForm.addEventListener('submit', async (e) => {
             text: `Unexpected error: ${error.message || error}`,
         });
     }
-});  
+});
 
 // Function to update the select dropdown with the new list
 function updateSelectDropdown(listId, bingoName) {
