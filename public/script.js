@@ -263,65 +263,41 @@ let orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
 // Function to add goal to Firebase
 async function addGoalToBackend(goalValue) {
     const user = auth.currentUser;
-    const listId = localStorage.getItem('listId'); // Retrieve listId
+    const listId = localStorage.getItem('listId');
 
     if (!user || !listId) {
-        console.error("Missing userId or listId");
+        console.error("Missing user or listId");
         return false;
     }
 
     const items = document.querySelectorAll('#bingo-list li');
-    if (items.length >= 24) {  // Ensure limit is respected before sending request
-        Swal.fire({
-            toast: true,
-            icon: 'error',
-            title: 'Oops...',
-            text: "You cannot add more than 24 items.",
-        });
+    if (items.length >= 24) {
+        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: "You cannot add more than 24 items." });
         return false;
     }
 
     try {
         const idToken = await user.getIdToken();
-
-        // If there are no available orders left, regenerate and shuffle the list
         if (orderList.length === 0) {
             orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
         }
-
-        // Assign the first available order to the new goal and remove it from the array
         const randomOrder = orderList.shift();
 
-        // Add the goal with the assigned order to the backend
-        const addResponse = await fetch(`/.netlify/functions/addItemToBingoList?userId=${user.uid}&listId=${listId}`, {
+        const res = await fetch('/.netlify/functions/addItemToBingoList', {
             method: "POST",
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ bingoItem: goalValue, order: randomOrder })
+            body: JSON.stringify({ bingoItem: goalValue, order: randomOrder, listId })
         });
 
-        const addData = await addResponse.json();
-        if (addResponse.ok) {
-            console.log("Goal added:", addData);
-            return true;
-        } else {
-            Swal.fire({
-                toast: true,
-                icon: 'error',
-                title: 'Oops...',
-                text: `Error: ${addData.error}`,
-            });
-            return false;
-        }
+        const data = await res.json();
+        if (res.ok) return true;
+        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Error: ${data.error}` });
+        return false;
     } catch (error) {
-        Swal.fire({
-            toast: true,
-            icon: 'error',
-            title: 'Oops...',
-            text: `Request failed: ${error}`,
-        });
+        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Request failed: ${error}` });
         return false;
     } finally {
-        checkItemCount(); // Ensure the function runs regardless of the outcome
+        checkItemCount();
     }
 }
 
@@ -366,53 +342,34 @@ bingoGoal.addEventListener('keydown', async (e) => {
 
 async function loadItemsForList() {
     const user = auth.currentUser;
-    if (!user) {
-        console.error('No user is signed in.');
-        return;
-    }
-
     const listId = localStorage.getItem('listId');
-    if (!listId) {
-        console.error('No list selected.');
-        return;
-    }
 
+    if (!user || !listId) return;
     bingoGoal.removeAttribute('disabled');
     bingoList.innerHTML = '';
-    document.querySelectorAll('.bingo-cell:not(.free-space)').forEach((item) => {
-        item.innerHTML = '';
-    });
+    document.querySelectorAll('.bingo-cell:not(.free-space)').forEach(item => item.innerHTML = '');
 
-    const idToken = await user.getIdToken();
     try {
-        const response = await fetch(`/.netlify/functions/getBingoItems?userId=${user.uid}&listId=${listId}`, {
+        const idToken = await user.getIdToken();
+        const res = await fetch(`/.netlify/functions/getBingoItems?listId=${listId}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${idToken}` }
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-            console.error("Error retrieving bingo items:", data.error);
-            return;
-        }
+        const data = await res.json();
+        if (!res.ok) return console.error("Error retrieving bingo items:", data.error);
 
         if (data.items.length < 24) {
-            data.items.forEach((item) => {
-                console.log(item)
+            data.items.forEach(item => {
                 const listItem = document.createElement('li');
                 listItem.innerHTML = item.bingoItem;
                 bingoList.append(listItem);
-            })
+            });
             bingoItemsModal.style.display = 'block';
             return;
         }
 
-        // Sort items by random order
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
-        console.log(sortedItems);
-        console.log(sortedItems.length);
-
-        // Update the bingo board with sorted items
         const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
         sortedItems.forEach((item, index) => {
             const div = document.createElement('div');
@@ -423,15 +380,9 @@ async function loadItemsForList() {
             cells[index].append(div);
         });
 
-        console.log("Bingo board updated!");
-
-        // Update the heading with the bingo list name
         const bingoName = localStorage.getItem('bingoName');
         heading.textContent = bingoName || 'Bingo Board';
-
-        // Close the modal
         bingoItemsModal.style.display = 'none';
-
         toggleUI(true, true);
     } catch (error) {
         console.error("Error fetching bingo items:", error);
@@ -486,58 +437,33 @@ bingoBoard.addEventListener('click', function (event) {
 
 // Function to mark an item as completed or incomplete
 async function updateItemCompletion(completedStatus) {
-    if (selectedItemId) {
-        const user = auth.currentUser; // Get the current user
-        const userId = user ? user.uid : null; // User ID from Firebase auth
-        const listId = localStorage.getItem('listId'); // List ID from localStorage
+    if (!selectedItemId) return;
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
 
-        if (!userId || !listId) {
-            console.error('Missing userId or listId');
-            return;
+    if (!user || !listId) return;
+
+    try {
+        const res = await fetch(`/.netlify/functions/editBingoItem`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await user.getIdToken()}`
+            },
+            body: JSON.stringify({ completed: completedStatus, listId, itemId: selectedItemId })
+        });
+
+        if (res.ok) {
+            const action = completedStatus ? 'completed' : 'incomplete';
+            document.querySelector(`div[data-id="${selectedItemId}"]`).setAttribute('data-completed', completedStatus);
+            Swal.fire({ toast: true, icon: 'success', title: 'Item updated!', text: `Item marked as ${action}` });
+        } else {
+            Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Error updating item` });
         }
-
-        try {
-            // Send a request to update the item completion status
-            const response = await fetch(`/.netlify/functions/editBingoItem?userId=${userId}&listId=${listId}&itemId=${selectedItemId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await user.getIdToken()}`,  // Include the Firebase ID token
-                },
-                body: JSON.stringify({
-                    completed: completedStatus,  // Mark the item as completed or incomplete
-                }),
-            });
-
-            if (response.ok) {
-                const action = completedStatus ? 'completed' : 'incomplete';
-                document.querySelector(`div[data-id="${selectedItemId}"]`).setAttribute('data-completed', completedStatus ? 'true' : 'false');
-                Swal.fire({
-                    toast: true,
-                    icon: 'success',
-                    title: 'Item updated!',
-                    text: `Item marked as ${action}`,
-                });
-            } else {
-                Swal.fire({
-                    toast: true,
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: `Error marking item as ${completedStatus ? 'completed' : 'incomplete'}`,
-                });
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            Swal.fire({
-                toast: true,
-                icon: 'error',
-                title: 'Oops...',
-                text: `Failed to mark item as ${completedStatus ? 'completed' : 'incomplete'}`,
-            });
-        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Failed to update item` });
     }
-
-    // Close the modal
     editModal.style.display = 'none';
 }
 
@@ -552,37 +478,22 @@ cancelButton.addEventListener('click', function () {
 });
 
 async function loadUserLists(idToken) {
-    const user = auth.currentUser;
-    if (!user) {
-        console.error('No user signed in.');
-        return false;
-    }
-
     try {
-        const response = await fetch(`/.netlify/functions/getBingoLists?userId=${user.uid}`, {
+        const res = await fetch(`/.netlify/functions/getBingoLists`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${idToken}` }
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-            console.error("Error retrieving bingo lists:", data.error);
-            return false;
-        }
+        const data = await res.json();
+        if (!res.ok) return false;
 
-        // Assuming data.lists contains the user's bingo lists
         const lists = data.bingoLists;
-
         if (lists && lists.length > 0) {
-            // Select the first list automatically
-            const firstList = lists[0];
-            localStorage.setItem('listId', firstList.id); // Save the selected listId
-            localStorage.setItem('bingoName', firstList.bingoName); // Save the list name
-
-            // Update the UI to reflect the selected list
-            displayBingoLists(data.bingoLists, idToken);
-
-            return true; // Indicating that the user has a list
+            const first = lists[0];
+            localStorage.setItem('listId', first.id);
+            localStorage.setItem('bingoName', first.bingoName);
+            displayBingoLists(lists, idToken);
+            return true;
         } else {
             console.log('No bingo lists found.');
             return false;

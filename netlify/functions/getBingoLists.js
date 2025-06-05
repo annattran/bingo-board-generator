@@ -10,7 +10,7 @@ try {
         });
     }
 } catch (error) {
-    console.error("Firebase Admin Init Error: ", error);
+    console.error("Error initializing Firebase Admin: ", error);
 }
 
 const db = admin.firestore();
@@ -23,19 +23,13 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const { userId } = event.queryStringParameters;
-
-    const authHeader = event.headers.authorization || '';
+    const authHeader = event.headers.authorization || event.headers.Authorization || '';
     const idToken = authHeader.replace('Bearer ', '');
 
+    let userId;
     try {
         const decodedToken = await verifyIdToken(idToken);
-        if (decodedToken.uid !== userId) {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ error: 'Unauthorized access' }),
-            };
-        }
+        userId = decodedToken.uid;
     } catch (error) {
         return {
             statusCode: 401,
@@ -43,23 +37,12 @@ exports.handler = async (event, context) => {
         };
     }
 
-    if (!userId) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Missing userId' }),
-        };
-    }
-
     try {
-        const snapshot = await db
-            .collection('users')
-            .doc(userId)
-            .collection('bingoLists')
-            .get();
+        const listsSnapshot = await db.collection('users').doc(userId).collection('bingoLists').get();
 
-        const bingoLists = snapshot.docs.map(doc => ({
+        const bingoLists = listsSnapshot.docs.map(doc => ({
             id: doc.id,
-            ...doc.data(),
+            ...doc.data()
         }));
 
         return {
@@ -67,9 +50,10 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ bingoLists }),
         };
     } catch (error) {
+        console.error('Error fetching bingo lists:', error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message }),
+            body: JSON.stringify({ error: 'Failed to retrieve bingo lists' }),
         };
     }
 };

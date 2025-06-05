@@ -23,28 +23,13 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const { bingoItem, order } = JSON.parse(event.body);
-    const { userId, listId } = event.queryStringParameters;
-
-    if (!bingoItem || order === undefined) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: 'Bingo item and order are required' }),
-        };
-    }
-
-    // 🔐 Authenticate
-    const authHeader = event.headers.authorization || '';
+    const authHeader = event.headers.authorization || event.headers.Authorization || '';
     const idToken = authHeader.replace('Bearer ', '');
 
+    let userId;
     try {
         const decodedToken = await verifyIdToken(idToken);
-        if (decodedToken.uid !== userId) {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ error: 'Unauthorized request' }),
-            };
-        }
+        userId = decodedToken.uid;
     } catch (error) {
         return {
             statusCode: 401,
@@ -52,47 +37,77 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const listRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
-    const listDoc = await listRef.get();
+    let bingoItem, order, listId;
+    try {
+        const body = JSON.parse(event.body);
+        bingoItem = body.bingoItem;
+        order = body.order;
+        listId = body.listId;
 
-    if (!listDoc.exists) {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Bingo list not found' }),
-        };
-    }
-
-    const listData = listDoc.data();
-    if (listData.bingoItems.length >= 24) {
+        if (!bingoItem || order === undefined || !listId) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Bingo item, order, and listId are required' }),
+            };
+        }
+    } catch (error) {
         return {
             statusCode: 400,
-            body: JSON.stringify({ error: 'Cannot add more than 24 items' }),
+            body: JSON.stringify({ error: 'Invalid JSON body' }),
         };
     }
 
-    const newItemRef = await listRef.collection('items').add({
-        item: bingoItem,
-        order,
-        completed: false,
-    });
+    try {
+        const listRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
+        const listDoc = await listRef.get();
 
-    const newItem = {
-        item: bingoItem,
-        order,
-        completed: false,
-        id: newItemRef.id,
-    };
+        if (!listDoc.exists) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ error: 'Bingo list not found' }),
+            };
+        }
 
-    const updatedBingoItems = [...listData.bingoItems, newItem];
-    const isComplete = updatedBingoItems.length === 24;
+        const listData = listDoc.data();
+        const bingoItems = listData.bingoItems || [];
 
-    await listRef.update({
-        bingoItems: updatedBingoItems,
-        isComplete,
-    });
+        if (bingoItems.length >= 24) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Cannot add more than 24 items' }),
+            };
+        }
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Item added', bingoItems: updatedBingoItems }),
-    };
+        const newItemRef = await listRef.collection('items').add({
+            item: bingoItem,
+            order,
+            completed: false,
+        });
+
+        const newItem = {
+            item: bingoItem,
+            order,
+            completed: false,
+            id: newItemRef.id,
+        };
+
+        const updatedBingoItems = [...bingoItems, newItem];
+        const isComplete = updatedBingoItems.length === 24;
+
+        await listRef.update({
+            bingoItems: updatedBingoItems,
+            isComplete,
+        });
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Item added', bingoItems: updatedBingoItems }),
+        };
+    } catch (error) {
+        console.error('Error adding item:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: error.message }),
+        };
+    }
 };
