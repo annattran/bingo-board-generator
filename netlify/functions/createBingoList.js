@@ -3,14 +3,11 @@ require('dotenv').config();
 const { verifyIdToken } = require('../../utils/firebaseAuth');
 
 try {
-    const serviceAccount = require(process.env.FIREBASE_CREDENTIALS);
+    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     if (admin.apps.length === 0) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
-    } else {
-        // Use the already initialized app
-        admin.app();
     }
 } catch (error) {
     console.error("Error initializing Firebase Admin: ", error);
@@ -19,66 +16,64 @@ try {
 const db = admin.firestore();
 
 exports.handler = async (event, context) => {
-    if (event.httpMethod === 'POST') {
-        const token = event.headers.authorization?.split('Bearer ')[1];
-
-        if (!token) {
-            return {
-                statusCode: 401,
-                body: JSON.stringify({ error: 'Missing Authorization token' }),
-            };
-        }
-
-        let decoded;
-        try {
-            decoded = await verifyIdToken(token);
-        } catch (err) {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ error: 'Invalid token' }),
-            };
-        }
-
-        const userId = decoded.uid;
-        const { bingoName } = JSON.parse(event.body);
-
-        if (!bingoName) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Bingo name is required' }),
-            };
-        }
-
-        const newBingoList = {
-            bingoName,
-            bingoItems: [],
-            isComplete: false,
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ error: 'Method not allowed' }),
         };
-
-        try {
-            // Create empty user doc (merge prevents overwrite)
-            await db.collection('users').doc(userId).set({}, { merge: true });
-
-            const bingoListRef = await db
-                .collection('users')
-                .doc(userId)
-                .collection('bingoLists')
-                .add(newBingoList);
-
-            return {
-                statusCode: 201,
-                body: JSON.stringify({ message: 'Bingo list created', id: bingoListRef.id }),
-            };
-        } catch (error) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ error: error.message }),
-            };
-        }
     }
 
-    return {
-        statusCode: 405,
-        body: JSON.stringify({ error: 'Method not allowed' }),
+    const { bingoName } = JSON.parse(event.body);
+    const userId = event.queryStringParameters.userId;
+
+    if (!bingoName) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Bingo name is required' }),
+        };
+    }
+
+    // 🔐 Authenticate
+    const authHeader = event.headers.authorization || '';
+    const idToken = authHeader.replace('Bearer ', '');
+
+    try {
+        const decodedToken = await verifyIdToken(idToken);
+        if (decodedToken.uid !== userId) {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({ error: 'Unauthorized request' }),
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 401,
+            body: JSON.stringify({ error: 'Invalid or missing token' }),
+        };
+    }
+
+    const newBingoList = {
+        bingoName,
+        bingoItems: [],
+        isComplete: false,
     };
-};  
+
+    try {
+        const bingoListRef = await db
+            .collection('users')
+            .doc(userId)
+            .collection('bingoLists')
+            .add(newBingoList);
+
+        return {
+            statusCode: 201,
+            body: JSON.stringify({ message: 'Bingo list created', id: bingoListRef.id }),
+        };
+    } catch (error) {
+        console.error('Create bingo list failed:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Failed to create list.' }),
+        };
+    }
+};

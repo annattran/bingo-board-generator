@@ -1,15 +1,15 @@
+// server.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const admin = require('firebase-admin');
-const fs = require('fs');
 
-// Initialize Firebase Admin SDK
-const serviceAccount = require(process.env.FIREBASE_CREDENTIALS);
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-});
+const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+}
 
 const db = admin.firestore();
 
@@ -18,30 +18,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Middleware to check Firebase ID token
+// Middleware to verify Firebase ID token
 const verifyIdToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Unauthorized: No token provided" });
+        return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-
     try {
-        req.user = await admin.auth().verifyIdToken(idToken);
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        req.user = decodedToken;
         next();
     } catch (error) {
-        console.error("Firebase Token Verification Error:", error);
-        res.status(401).json({ error: "Unauthorized: Invalid token" });
+        console.error('Token verification failed:', error);
+        res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
 };
 
-// 📌 1️⃣ Create a new Bingo List under a User
+// Create a new Bingo List
 app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
     try {
         const { bingoName } = req.body;
-        const userId = req.params.userId;
+        const userId = req.user.uid;
 
         if (!bingoName) {
             return res.status(400).json({ error: 'Bingo name is required' });
@@ -49,23 +48,22 @@ app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
 
         const newBingoList = {
             bingoName,
-            bingoItems: [],
-            isComplete: false  // New flag to track completion status
+            isComplete: false
         };
 
         const bingoListRef = await db.collection('users').doc(userId).collection('bingoLists').add(newBingoList);
-
         res.status(201).json({ message: 'Bingo list created', id: bingoListRef.id });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// 📌 2️⃣ Add Items to a Bingo List (max 24 items)
+// Add Items to a Bingo List
 app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
     try {
         const { bingoItem, order } = req.body;
-        const { userId, listId } = req.params;
+        const userId = req.user.uid;
+        const { listId } = req.params;
 
         if (!bingoItem || order === undefined) {
             return res.status(400).json({ error: 'Bingo item and order are required' });
@@ -78,72 +76,53 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
             return res.status(404).json({ error: 'Bingo list not found' });
         }
 
-        const listData = listDoc.data();
-        if (listData.bingoItems.length >= 24) { // ✅ Ensures 24 is the max
+        const itemsSnapshot = await listRef.collection('items').get();
+        if (itemsSnapshot.size >= 24) {
             return res.status(400).json({ error: 'Cannot add more than 24 items' });
         }
 
-        // Add the bingo item to Firestore
-        const newItemRef = await listRef.collection('items').add({
-            item: bingoItem,
-            order,
-            completed: false
-        });
+        await listRef.collection('items').add({ item: bingoItem, order, completed: false });
 
-        // Add new item to the list and check if it reaches 24
-        const newItem = {
-            item: bingoItem,
-            order,
-            completed: false,
-            id: newItemRef.id
-        };
+        const isComplete = itemsSnapshot.size + 1 === 24;
+        if (isComplete) await listRef.update({ isComplete: true });
 
-        const updatedBingoItems = [...listData.bingoItems, newItem];
-        const isComplete = updatedBingoItems.length === 24; // ✅ Marks complete only when exactly 24
-
-        await listRef.update({
-            bingoItems: updatedBingoItems,
-            isComplete
-        });
-
-        res.json({ message: 'Item added', bingoItems: updatedBingoItems });
+        res.json({ message: 'Item added' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// GET endpoint to fetch bingo items for a specific user's bingo list
+// Get Bingo Items for a List
 app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
-    const { userId, listId } = req.params;
+    const userId = req.user.uid;
+    const { listId } = req.params;
 
     try {
-        // Fetch the bingo list from Firestore
-        const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
-        const bingoListDoc = await bingoListRef.get();
+        const listRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
+        const listDoc = await listRef.get();
 
-        if (!bingoListDoc.exists) {
+        if (!listDoc.exists) {
             return res.status(404).json({ error: 'Bingo list not found' });
         }
 
-        // Fetch the bingo items from Firestore
-        const itemsSnapshot = await bingoListRef.collection('items').get();
-        const itemsWithId = itemsSnapshot.docs.map(doc => ({
-            id: doc.id,  // Use Firestore document ID
+        const itemsSnapshot = await listRef.collection('items').get();
+        const items = itemsSnapshot.docs.map(doc => ({
+            id: doc.id,
             bingoItem: doc.data().item,
             order: doc.data().order,
             completed: doc.data().completed
         }));
 
-        res.json({ items: itemsWithId });
+        res.json({ items });
     } catch (error) {
-        console.error('Error fetching bingo items:', error);
         res.status(500).json({ error: 'Failed to retrieve bingo items' });
     }
 });
 
-// 📌 4️⃣ Edit a Bingo Item (update its name or order)
+// Edit a Bingo Item
 app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async (req, res) => {
-    const { userId, listId, itemId } = req.params;
+    const userId = req.user.uid;
+    const { listId, itemId } = req.params;
     const { completed } = req.body;
 
     if (completed === undefined) {
@@ -151,46 +130,25 @@ app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async
     }
 
     try {
-        const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
-        const itemRef = bingoListRef.collection('items').doc(itemId);
+        const itemRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId).collection('items').doc(itemId);
         const itemDoc = await itemRef.get();
 
         if (!itemDoc.exists) {
             return res.status(404).json({ error: 'Bingo item not found' });
         }
 
-        // Update Firestore document directly
         await itemRef.update({ completed });
-
-        // Also update `bingoItems` array in `bingoLists`
-        const bingoListDoc = await bingoListRef.get();
-        if (bingoListDoc.exists) {
-            const listData = bingoListDoc.data();
-            const bingoItems = listData.bingoItems || [];
-
-            const itemIndex = bingoItems.findIndex(item => item.id === itemId);
-            if (itemIndex !== -1) {
-                bingoItems[itemIndex].completed = completed;
-                await bingoListRef.update({ bingoItems });
-            }
-        }
-
         res.json({ message: 'Bingo item updated' });
     } catch (error) {
-        console.error('Error updating bingo item:', error);
         res.status(500).json({ error: 'Failed to update bingo item' });
     }
 });
 
-// 📌 5️⃣ Get all Bingo Lists under a User
+// Get All Bingo Lists
 app.get('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
     try {
-        const userId = req.params.userId;
+        const userId = req.user.uid;
         const listsSnapshot = await db.collection('users').doc(userId).collection('bingoLists').get();
-
-        if (listsSnapshot.empty) {
-            return res.status(404).json({ error: 'No bingo lists found for this user' });
-        }
 
         const bingoLists = listsSnapshot.docs.map(doc => ({
             id: doc.id,
@@ -199,11 +157,14 @@ app.get('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
 
         res.json({ bingoLists });
     } catch (error) {
-        console.error('Error fetching bingo lists:', error);
         res.status(500).json({ error: 'Failed to retrieve bingo lists' });
     }
 });
 
-// Start the server
+// Fallback route
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

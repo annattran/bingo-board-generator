@@ -1,15 +1,13 @@
 const admin = require('firebase-admin');
 require('dotenv').config();
+const { verifyIdToken } = require('../../utils/firebaseAuth');
 
 try {
-    const serviceAccount = require(process.env.FIREBASE_CREDENTIALS);
+    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     if (admin.apps.length === 0) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
-    } else {
-        // Use the already initialized app
-        admin.app();
     }
 } catch (error) {
     console.error("Error initializing Firebase Admin: ", error);
@@ -18,52 +16,62 @@ try {
 const db = admin.firestore();
 
 exports.handler = async (event, context) => {
-    if (event.httpMethod === 'PUT') {
-        const { userId, listId, itemId } = event.queryStringParameters;
-        const { completed } = JSON.parse(event.body);
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ error: 'Method not allowed' }),
+        };
+    }
 
-        if (completed === undefined) {
+    const { updatedItem } = JSON.parse(event.body);
+    const { userId, listId, itemId } = event.queryStringParameters;
+
+    // 🔐 Authenticate
+    const authHeader = event.headers.authorization || '';
+    const idToken = authHeader.replace('Bearer ', '');
+
+    try {
+        const decodedToken = await verifyIdToken(idToken);
+        if (decodedToken.uid !== userId) {
             return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Completed status is required' }),
+                statusCode: 403,
+                body: JSON.stringify({ error: 'Unauthorized request' }),
             };
         }
+    } catch (error) {
+        return {
+            statusCode: 401,
+            body: JSON.stringify({ error: 'Invalid or missing token' }),
+        };
+    }
 
-        try {
-            const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
-            const itemRef = bingoListRef.collection('items').doc(itemId);
-            const itemDoc = await itemRef.get();
+    // Validate item
+    if (!updatedItem || typeof updatedItem.item !== 'string' || typeof updatedItem.order !== 'number') {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Invalid item data' }),
+        };
+    }
 
-            if (!itemDoc.exists) {
-                return {
-                    statusCode: 404,
-                    body: JSON.stringify({ error: 'Bingo item not found' }),
-                };
-            }
+    try {
+        const itemRef = db
+            .collection('users')
+            .doc(userId)
+            .collection('bingoLists')
+            .doc(listId)
+            .collection('items')
+            .doc(itemId);
 
-            await itemRef.update({ completed });
+        await itemRef.update(updatedItem);
 
-            const bingoListDoc = await bingoListRef.get();
-            if (bingoListDoc.exists) {
-                const listData = bingoListDoc.data();
-                const bingoItems = listData.bingoItems || [];
-
-                const itemIndex = bingoItems.findIndex(item => item.id === itemId);
-                if (itemIndex !== -1) {
-                    bingoItems[itemIndex].completed = completed;
-                    await bingoListRef.update({ bingoItems });
-                }
-            }
-
-            return {
-                statusCode: 200,
-                body: JSON.stringify({ message: 'Bingo item updated' }),
-            };
-        } catch (error) {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ error: 'Failed to update bingo item' }),
-            };
-        }
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Bingo item updated' }),
+        };
+    } catch (error) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: error.message }),
+        };
     }
 };
