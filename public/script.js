@@ -194,6 +194,9 @@ submitNameForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ bingoName, bingoItems: [] })
         });
 
+        const errorData = await res.json();
+        console.log('Error:', errorData);
+
         if (res.ok) {
             const data = await res.json();
             Swal.fire({

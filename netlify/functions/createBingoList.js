@@ -20,8 +20,8 @@ const db = admin.firestore();
 
 exports.handler = async (event, context) => {
     if (event.httpMethod === 'POST') {
-        const { bingoName } = JSON.parse(event.body);
         const token = event.headers.authorization?.split('Bearer ')[1];
+
         if (!token) {
             return {
                 statusCode: 401,
@@ -40,6 +40,7 @@ exports.handler = async (event, context) => {
         }
 
         const userId = decoded.uid;
+        const { bingoName } = JSON.parse(event.body);
 
         if (!bingoName) {
             return {
@@ -55,7 +56,15 @@ exports.handler = async (event, context) => {
         };
 
         try {
-            const bingoListRef = await db.collection('users').doc(userId).collection('bingoLists').add(newBingoList);
+            // Create empty user doc (merge prevents overwrite)
+            await db.collection('users').doc(userId).set({}, { merge: true });
+
+            const bingoListRef = await db
+                .collection('users')
+                .doc(userId)
+                .collection('bingoLists')
+                .add(newBingoList);
+
             return {
                 statusCode: 201,
                 body: JSON.stringify({ message: 'Bingo list created', id: bingoListRef.id }),
@@ -67,4 +76,9 @@ exports.handler = async (event, context) => {
             };
         }
     }
-};
+
+    return {
+        statusCode: 405,
+        body: JSON.stringify({ error: 'Method not allowed' }),
+    };
+};  
