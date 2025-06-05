@@ -21,7 +21,25 @@ const db = admin.firestore();
 exports.handler = async (event, context) => {
     if (event.httpMethod === 'POST') {
         const { bingoName } = JSON.parse(event.body);
-        const userId = event.queryStringParameters.userId;
+        const token = event.headers.authorization?.split('Bearer ')[1];
+        if (!token) {
+            return {
+                statusCode: 401,
+                body: JSON.stringify({ error: 'Missing Authorization token' }),
+            };
+        }
+
+        let decoded;
+        try {
+            decoded = await verifyIdToken(token);
+        } catch (err) {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({ error: 'Invalid token' }),
+            };
+        }
+
+        const userId = decoded.uid;
 
         if (!bingoName) {
             return {

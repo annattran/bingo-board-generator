@@ -188,7 +188,7 @@ submitNameForm.addEventListener('submit', async (e) => {
 
     try {
         const idToken = await user.getIdToken();
-        const res = await fetch(`/.netlify/functions/createBingoList?userId=${user.uid}`, {
+        const res = await fetch(`/.netlify/functions/createBingoList`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
             body: JSON.stringify({ bingoName, bingoItems: [] })
