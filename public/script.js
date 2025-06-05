@@ -153,7 +153,7 @@ togglePasswordButtons.forEach(button => button.addEventListener('click', (e) => 
 // Get modal element
 const bingoNameModal = document.getElementById('bingo-name-modal');
 const bingoItemsModal = document.getElementById('bingo-items-modal');
-const closeModal = document.querySelectorAll('close-modal');
+const closeModal = document.querySelectorAll('.close-modal');
 const createButton = document.getElementById('create');
 const submitNameForm = document.getElementById('bingo-name-form');
 const bingoGoal = document.getElementById('bingo-goal');
