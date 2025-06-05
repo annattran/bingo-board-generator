@@ -168,6 +168,7 @@ createButton.addEventListener('click', () => {
 
 // When the user clicks the "X", close the modal
 closeModal.forEach(button => button.addEventListener('click', (e) => {
+    const modal = button.closest('.modal');
     modal.style.display = 'none';
 }));
 
