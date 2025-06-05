@@ -308,6 +308,10 @@ input:disabled {
 }
 
 @media(max-width:768px) {
+    .navButtonsContainer {
+        right: 10px;
+    }
+
     .bingo-cell {
         height: 120px;
     }
