@@ -1,21 +1,24 @@
+// utils/firebaseAuth.js
 const admin = require('firebase-admin');
 
-// Middleware to check Firebase ID token
-const verifyIdToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
+// Ensure Firebase is initialized only once
+if (!admin.apps.length) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+}
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: "Unauthorized: No token provided" });
+const verifyIdToken = async (idToken) => {
+    if (!idToken) {
+        throw new Error('No token provided');
     }
 
-    const idToken = authHeader.split('Bearer ')[1];
-
     try {
-        req.user = await admin.auth().verifyIdToken(idToken);
-        next();
+        return await admin.auth().verifyIdToken(idToken);
     } catch (error) {
-        console.error("Firebase Token Verification Error:", error);
-        res.status(401).json({ error: "Unauthorized: Invalid token" });
+        console.error('Token verification failed:', error);
+        throw new Error('Invalid token');
     }
 };
 

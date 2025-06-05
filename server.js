@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const verifyIdTokenMiddleware = require('./middleware/verifyIdToken');
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
 if (!admin.apps.length) {
@@ -18,26 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Middleware to verify Firebase ID token
-const verifyIdToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Unauthorized: No token provided' });
-    }
-
-    const idToken = authHeader.split('Bearer ')[1];
-    try {
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        req.user = decodedToken;
-        next();
-    } catch (error) {
-        console.error('Token verification failed:', error);
-        res.status(401).json({ error: 'Unauthorized: Invalid token' });
-    }
-};
-
 // Create a new Bingo List
-app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
+app.post('/users/:userId/bingo-lists', verifyIdTokenMiddleware, async (req, res) => {
     try {
         const { bingoName } = req.body;
         const userId = req.user.uid;
@@ -59,7 +42,7 @@ app.post('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
 });
 
 // Add Items to a Bingo List
-app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
+app.post('/users/:userId/bingo-lists/:listId/items', verifyIdTokenMiddleware, async (req, res) => {
     try {
         const { bingoItem, order } = req.body;
         const userId = req.user.uid;
@@ -93,7 +76,7 @@ app.post('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, 
 });
 
 // Get Bingo Items for a List
-app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, res) => {
+app.get('/users/:userId/bingo-lists/:listId/items', verifyIdTokenMiddleware, async (req, res) => {
     const userId = req.user.uid;
     const { listId } = req.params;
 
@@ -120,7 +103,7 @@ app.get('/users/:userId/bingo-lists/:listId/items', verifyIdToken, async (req, r
 });
 
 // Edit a Bingo Item
-app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async (req, res) => {
+app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdTokenMiddleware, async (req, res) => {
     const userId = req.user.uid;
     const { listId, itemId } = req.params;
     const { completed } = req.body;
@@ -145,7 +128,7 @@ app.put('/users/:userId/bingo-lists/:listId/items/:itemId', verifyIdToken, async
 });
 
 // Get All Bingo Lists
-app.get('/users/:userId/bingo-lists', verifyIdToken, async (req, res) => {
+app.get('/users/:userId/bingo-lists', verifyIdTokenMiddleware, async (req, res) => {
     try {
         const userId = req.user.uid;
         const listsSnapshot = await db.collection('users').doc(userId).collection('bingoLists').get();
