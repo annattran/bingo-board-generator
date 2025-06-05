@@ -187,18 +187,19 @@ submitNameForm.addEventListener('submit', async (e) => {
     }
 
     try {
-        const idToken = await user.getIdToken();
-        const res = await fetch(`/.netlify/functions/createBingoList`, {
+        const res = await fetch('/.netlify/functions/createBingoList', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ bingoName, bingoItems: [] })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ bingoName })
         });
 
-        const errorData = await res.json();
-        console.log('Error:', errorData);
+        const data = await res.json(); // Only parse once
 
         if (res.ok) {
-            const data = await res.json();
+            // Success logic
             Swal.fire({
                 toast: true,
                 icon: 'success',
@@ -206,34 +207,30 @@ submitNameForm.addEventListener('submit', async (e) => {
                 text: `'${bingoName}' has been created successfully!`,
             });
 
-            localStorage.setItem('listId', data.id); // Store listId for future use
-            localStorage.setItem('bingoName', bingoName); // Store the bingo name
-
+            localStorage.setItem('listId', data.id);
+            localStorage.setItem('bingoName', bingoName);
             bingoNameModal.style.display = 'none';
             bingoItemsModal.style.display = 'block';
-
-            // Reset the form
-            submitNameForm.reset(); // Reset the bingoName field
-
-            // Update the select dropdown with the newly created list
+            submitNameForm.reset();
             updateSelectDropdown(data.id, bingoName);
+
         } else {
-            const errorData = await res.json();
             Swal.fire({
                 toast: true,
                 icon: 'error',
                 title: 'Oops...',
-                text: errorData.error || 'Error creating list.',
+                text: data.error || 'Error creating list.',
             });
         }
+
     } catch (error) {
         Swal.fire({
             toast: true,
             icon: 'error',
             title: 'Oops...',
-            text: `Error creating new list: ${error}`,
+            text: `Unexpected error: ${error.message || error}`,
         });
-    }
+    }      
 });
 
 // Function to update the select dropdown with the new list
