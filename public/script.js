@@ -186,6 +186,8 @@ submitNameForm.addEventListener('submit', async (e) => {
         return;
     }
 
+    const idToken = await user.getIdToken(); // ← This was missing
+
     try {
         const res = await fetch('/.netlify/functions/createBingoList', {
             method: 'POST',
@@ -196,10 +198,9 @@ submitNameForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ bingoName })
         });
 
-        const data = await res.json(); // Only parse once
+        const data = await res.json();
 
         if (res.ok) {
-            // Success logic
             Swal.fire({
                 toast: true,
                 icon: 'success',
@@ -222,7 +223,6 @@ submitNameForm.addEventListener('submit', async (e) => {
                 text: data.error || 'Error creating list.',
             });
         }
-
     } catch (error) {
         Swal.fire({
             toast: true,
@@ -230,8 +230,8 @@ submitNameForm.addEventListener('submit', async (e) => {
             title: 'Oops...',
             text: `Unexpected error: ${error.message || error}`,
         });
-    }      
-});
+    }
+});  
 
 // Function to update the select dropdown with the new list
 function updateSelectDropdown(listId, bingoName) {
