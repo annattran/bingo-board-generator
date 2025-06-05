@@ -309,7 +309,9 @@ input:disabled {
 
 @media(max-width:768px) {
     .navButtonsContainer {
+        left: 10px;
         right: 10px;
+        gap: 5px;
     }
 
     .bingo-cell {
