@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 require('dotenv').config();
-const { verifyIdToken } = require('../utils/firebaseAuth');
+const { verifyIdToken } = require('../../utils/firebaseAuth');
 
 try {
     const serviceAccount = require(process.env.FIREBASE_CREDENTIALS);
