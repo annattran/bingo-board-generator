@@ -212,17 +212,24 @@ input:disabled {
     position: relative;
 }
 
-.bingo-cell .edit-item[data-completed="true"]::before {
+.bingo-cell .edit-item[data-completed="true"]::before,
+.bingo-cell .edit-item[data-completed="true"]::after {
+    content: '';
     position: absolute;
-    content: '❌';
     top: 0;
-    right: 0;
-    bottom: 0;
     left: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 90px;
+    width: 100%;
+    height: 100%;
+    border-top: 2px solid red;
+    transform-origin: center;
+}
+
+.bingo-cell .edit-item[data-completed="true"]::before {
+    transform: rotate(45deg);
+}
+
+.bingo-cell .edit-item[data-completed="true"]::after {
+    transform: rotate(-45deg);
 }
 
 .bingo-board button {
