@@ -24,7 +24,6 @@ exports.handler = async (event, context) => {
     }
 
     const { bingoName } = JSON.parse(event.body);
-    const userId = event.queryStringParameters.userId;
 
     if (!bingoName) {
         return {
@@ -34,17 +33,13 @@ exports.handler = async (event, context) => {
     }
 
     // 🔐 Authenticate
-    const authHeader = event.headers.authorization || '';
+    const authHeader = event.headers.authorization || event.headers.Authorization || '';
     const idToken = authHeader.replace('Bearer ', '');
 
+    let userId;
     try {
         const decodedToken = await verifyIdToken(idToken);
-        if (decodedToken.uid !== userId) {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ error: 'Unauthorized request' }),
-            };
-        }
+        userId = decodedToken.uid;  // ← Use UID from the token instead of query params
     } catch (error) {
         return {
             statusCode: 401,
