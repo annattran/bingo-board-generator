@@ -8,14 +8,16 @@ module.exports = {
         rules: [
             {
                 test: /\.js$/,
-                // Exclude node_modules except for packages that need transpiling
-                exclude: /node_modules\/(?!(firebase-admin|google-logging-utils|@fastify\/busboy)\/).*/,
+                exclude: (modulePath) => {
+                    // Exclude all node_modules except specific ones
+                    return /node_modules/.test(modulePath) &&
+                        !/firebase-admin|google-logging-utils|@fastify\/busboy/.test(modulePath);
+                },
                 use: {
                     loader: 'babel-loader',
-                    // Babel will use your babel.config.js or .babelrc automatically
                     options: {
                         presets: ['@babel/preset-env'],
-                        plugins: ['@babel/plugin-transform-optional-chaining'], // Add this plugin explicitly
+                        plugins: ['@babel/plugin-transform-optional-chaining']
                     }
                 }
             }
@@ -30,7 +32,6 @@ module.exports = {
         },
         extensions: ['.js']
     },
-    // Mark built‑in Node modules as external so they aren't bundled
     externals: {
         'node:stream': 'commonjs stream'
     }
