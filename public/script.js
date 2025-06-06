@@ -37,6 +37,14 @@ const navButtonsContainer = document.getElementById("navButtonsContainer");
 const listContainer = document.getElementById('bingoLists');
 const selectListContainer = document.querySelector('.selectListContainer');
 
+function showLoader() {
+    document.getElementById('loaderOverlay').classList.remove('hidden');
+}
+
+function hideLoader() {
+    document.getElementById('loaderOverlay').classList.add('hidden');
+}
+
 function toggleUI(userSignedIn, hasList = false) {
     // Handle UI visibility based on user sign-in status
     const hideAuth = userSignedIn;
@@ -69,6 +77,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 logoutButton.addEventListener('click', async () => {
+    showLoader();  // before starting
     try {
         await signOut(auth);
         localStorage.removeItem('userId');
@@ -82,6 +91,8 @@ logoutButton.addEventListener('click', async () => {
             title: 'Oops...',
             text: `Error signing out: ${error}`,
         });
+    } finally {
+        hideLoader();  // always hide at the end
     }
 });
 
@@ -90,6 +101,7 @@ emailForm.addEventListener('submit', async (e) => {
     const email = emailForm.email.value;
     const password = emailForm.password.value;
 
+    showLoader();  // before starting
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -106,6 +118,8 @@ emailForm.addEventListener('submit', async (e) => {
             title: 'Oops...',
             text: `Error during email authentication: ${error}`,
         });
+    } finally {
+        hideLoader();  // always hide at the end
     }
 });
 
@@ -114,6 +128,7 @@ signupForm.addEventListener('submit', async (e) => {
     const email = signupForm.signupEmail.value;
     const password = signupForm.signupPassword.value;
 
+    showLoader();  // before starting
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
@@ -133,6 +148,8 @@ signupForm.addEventListener('submit', async (e) => {
             title: 'Oops...',
             text: `Error during signup or sign-in: ${error}`,
         });
+    } finally {
+        hideLoader();  // always hide at the end
     }
 });
 
@@ -201,6 +218,7 @@ submitNameForm.addEventListener('submit', async (e) => {
 
     const idToken = await user.getIdToken(); // ← This was missing
 
+    showLoader();  // before starting
     try {
         const res = await fetch('/.netlify/functions/createBingoList', {
             method: 'POST',
@@ -243,6 +261,8 @@ submitNameForm.addEventListener('submit', async (e) => {
             title: 'Oops...',
             text: `Unexpected error: ${error.message || error}`,
         });
+    } finally {
+        hideLoader();  // always hide at the end
     }
 });
 
@@ -289,6 +309,7 @@ async function addGoalToBackend(goalValue) {
         return false;
     }
 
+    showLoader();  // before starting
     try {
         const idToken = await user.getIdToken();
         if (orderList.length === 0) {
@@ -311,6 +332,7 @@ async function addGoalToBackend(goalValue) {
         return false;
     } finally {
         checkItemCount();
+        hideLoader();  // always hide at the end
     }
 }
 
@@ -362,6 +384,7 @@ async function loadItemsForList() {
     bingoList.innerHTML = '';
     document.querySelectorAll('.bingo-cell:not(.free-space)').forEach(item => item.innerHTML = '');
 
+    showLoader();  // before starting
     try {
         const idToken = await user.getIdToken();
         const res = await fetch(`/.netlify/functions/getBingoItems?listId=${listId}`, {
@@ -399,6 +422,8 @@ async function loadItemsForList() {
         toggleUI(true, true);
     } catch (error) {
         console.error("Error fetching bingo items:", error);
+    } finally {
+        hideLoader();  // always hide at the end
     }
 }
 
@@ -456,6 +481,7 @@ async function updateItemCompletion(completedStatus) {
 
     if (!user || !listId) return;
 
+    showLoader();  // before starting
     try {
         const res = await fetch(`/.netlify/functions/editBingoItem`, {
             method: 'PUT',
@@ -476,6 +502,8 @@ async function updateItemCompletion(completedStatus) {
     } catch (error) {
         console.error('Error:', error);
         Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Failed to update item` });
+    } finally {
+        hideLoader();  // always hide at the end
     }
     editModal.style.display = 'none';
 }
@@ -491,6 +519,7 @@ cancelButton.addEventListener('click', function () {
 });
 
 async function loadUserLists(idToken) {
+    showLoader();  // before starting
     try {
         const res = await fetch(`/.netlify/functions/getBingoLists`, {
             method: 'GET',
@@ -514,6 +543,8 @@ async function loadUserLists(idToken) {
     } catch (error) {
         console.error('Error fetching user bingo lists:', error);
         return false;
+    } finally {
+        hideLoader();  // always hide at the end
     }
 }
 
