@@ -20,6 +20,7 @@ const db = getFirestore(app); // Initialize Firestore
 
 // Cache DOM elements
 const heading = document.querySelector('h1');
+const editList = document.getElementById('editList');
 const bingoBoard = document.getElementById('bingo-board');
 const authContainer = document.getElementById('authContainer');
 const logoutButton = document.getElementById('logoutButton');
@@ -348,6 +349,8 @@ async function loadItemsForList() {
 
         const bingoName = localStorage.getItem('bingoName');
         heading.textContent = bingoName || 'Bingo Board';
+        console.log(editList)
+        editList.classList.remove('hidden');
         bingoItemsModal.style.display = 'none';
         toggleUI(true, true);
     } catch (error) {
@@ -428,6 +431,7 @@ window.addEventListener('click', (event) => {
 
 // Get the parent container that holds the bingo items
 const editModal = document.getElementById('edit-modal');
+const editListModal = document.getElementById('edit-list-modal');
 const confirmButton = document.getElementById('mark-completed');
 const cancelButton = document.getElementById('mark-incomplete');
 
@@ -448,6 +452,11 @@ bingoBoard.addEventListener('click', function (event) {
         // Show the modal
         editModal.style.display = 'block';
     }
+});
+
+editList.addEventListener('click', function (event) {
+    // Show the modal
+    editListModal.style.display = 'block';
 });
 
 // Function to mark an item as completed or incomplete
@@ -584,4 +593,101 @@ listContainer.addEventListener('change', async (e) => {
     localStorage.setItem('bingoName', selectedListName);
     console.log(`Selected Bingo List: ${selectedListName}: ${selectedListId}`);
     loadItemsForList();
+});
+
+document.getElementById('editListName').addEventListener('click', async () => {
+    editListModal.style.display = 'none';
+
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
+    if (!user || !listId) return;
+
+    const { value: newName } = await Swal.fire({
+        title: 'Rename Bingo List',
+        input: 'text',
+        inputLabel: 'New list name',
+        inputValue: localStorage.getItem('bingoName'),
+        showCancelButton: true
+    });
+
+    if (!newName) return;
+
+    showLoader();
+    try {
+        const idToken = await user.getIdToken();
+        const res = await fetch('/.netlify/functions/editBingoList', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ listId, newName })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            Swal.fire({ icon: 'success', title: 'List renamed!' });
+            localStorage.setItem('bingoName', newName);
+            listContainer.querySelector(`option[value="${listId}"]`).textContent = newName;
+            heading.textContent = newName;
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        Swal.fire({ icon: 'error', title: 'Error renaming', text: error.message });
+    } finally {
+        hideLoader();
+    }
+});
+
+document.getElementById('deleteList').addEventListener('click', async () => {
+    editListModal.style.display = 'none';
+
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
+    if (!user || !listId) return;
+
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "Deleting this list cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) return;
+
+    showLoader();
+    try {
+        const idToken = await user.getIdToken();
+        const res = await fetch('/.netlify/functions/deleteBingoList', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ listId })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            Swal.fire({ icon: 'success', title: 'List deleted!' });
+
+            // Remove from dropdown
+            listContainer.querySelector(`option[value="${listId}"]`).remove();
+
+            // Clear localStorage and UI
+            localStorage.removeItem('listId');
+            localStorage.removeItem('bingoName');
+            heading.textContent = 'Bingo Board Generator';
+            bingoBoard.classList.add('hidden');
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        Swal.fire({ icon: 'error', title: 'Error deleting', text: error.message });
+    } finally {
+        hideLoader();
+    }
 });

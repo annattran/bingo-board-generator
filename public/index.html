@@ -15,7 +15,10 @@
 </head>
 
 <body>
-    <h1>Bingo Board Generator</h1>
+    <div class="headingContainer">
+        <h1>Bingo Board Generator</h1>
+        <button id="editList" class="hidden"><i class="fa-solid fa-pen-to-square"></i></button>
+    </div>
 
     <!-- Navigation Buttons -->
     <div id="navButtonsContainer" class="navButtonsContainer hidden">
@@ -153,6 +156,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal -->
+     <div id="edit-list-modal" class="modal">
+        <div class="modal-content">
+            <button id="editListName">Rename List</button>
+            <button id="deleteList">Delete List</button>
+        </div>
+     </div>
 
     <div id="loaderOverlay" class="loader-overlay hidden">
         <div class="spinner"></div>

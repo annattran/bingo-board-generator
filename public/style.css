@@ -51,6 +51,25 @@ h2 {
     margin: 20px 0;
 }
 
+.headingContainer {
+    position: relative;
+}
+
+.headingContainer button {
+    position: absolute;
+    background: none;
+    min-width: auto;
+    color: black;
+    top: 0;
+    right: -20px;
+    padding: 0;
+}
+
+.headingContainer button:hover {
+    background: none;
+    color: #0056b3;
+}
+
 .navButtonsContainer {
     position: absolute;
     top: 20px;
