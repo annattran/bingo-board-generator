@@ -309,6 +309,7 @@ input:disabled {
     width: 100%;
     font-family: inherit;
     font-size: inherit;
+    padding: 0 5px;
 }
 
 .modal .bingo-form .flex {
@@ -352,6 +353,11 @@ input:disabled {
     display: flex;
     justify-content: center;
     gap: 10px;
+    width: 100%;
+}
+
+.modal .button-container button {
+    min-width: auto;
 }
 
 @media(max-width:768px) {
@@ -392,7 +398,6 @@ input:disabled {
 
     .modal .button-container {
         flex-direction: column;
-        width: 100%;
         gap: 0;
     }
 }
