@@ -37,17 +37,18 @@ exports.handler = async (event, context) => {
         };
     }
 
-    let completed, itemId, listId;
+    let completed, bingoItem, itemId, listId;
     try {
         const body = JSON.parse(event.body);
         completed = body.completed;
+        bingoItem = body.bingoItem;
         itemId = body.itemId;
         listId = body.listId;
 
-        if (completed === undefined || !itemId || !listId) {
+        if (!itemId || !listId) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ error: 'Completed status, itemId, and listId are required' }),
+                body: JSON.stringify({ error: 'itemId and listId are required' }),
             };
         }
     } catch (error) {
@@ -69,8 +70,13 @@ exports.handler = async (event, context) => {
             };
         }
 
-        await itemRef.update({ completed });
+        const updateFields = {};
+        if (completed !== undefined) updateFields.completed = completed;
+        if (bingoItem !== undefined) updateFields.item = bingoItem;
 
+        await itemRef.update(updateFields);
+
+        // Optional: Update bingoItems array in parent list doc
         const bingoListDoc = await bingoListRef.get();
         if (bingoListDoc.exists) {
             const listData = bingoListDoc.data();
@@ -78,7 +84,9 @@ exports.handler = async (event, context) => {
 
             const itemIndex = bingoItems.findIndex(item => item.id === itemId);
             if (itemIndex !== -1) {
-                bingoItems[itemIndex].completed = completed;
+                if (completed !== undefined) bingoItems[itemIndex].completed = completed;
+                if (bingoItem !== undefined) bingoItems[itemIndex].bingoItem = bingoItem;
+
                 await bingoListRef.update({ bingoItems });
             }
         }

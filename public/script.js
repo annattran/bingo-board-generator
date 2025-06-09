@@ -438,8 +438,12 @@ let selectedItemId = null;
 bingoBoard.addEventListener('click', function (event) {
     // Check if the clicked element is an edit button
     if (event.target && event.target.classList.contains('edit-item')) {
+        const itemElement = event.target;
         // Get the item ID from the closest parent <li> element's data-item-id attribute
-        selectedItemId = event.target.closest('div').getAttribute('data-id');
+        selectedItemId = itemElement.closest('div').getAttribute('data-id');
+
+        // Fill the textarea with the current text
+        document.getElementById('edit-goal-text').value = itemElement.textContent.trim();
 
         // Show the modal
         editModal.style.display = 'block';
@@ -480,6 +484,39 @@ async function updateItemCompletion(completedStatus) {
     }
     editModal.style.display = 'none';
 }
+
+document.getElementById('save-edit').addEventListener('click', async () => {
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
+    const updatedText = document.getElementById('edit-goal-text').value.trim();
+
+    if (!selectedItemId || !user || !listId || !updatedText) return;
+
+    showLoader();
+    try {
+        const res = await fetch(`/.netlify/functions/editBingoItem`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await user.getIdToken()}`
+            },
+            body: JSON.stringify({ listId, itemId: selectedItemId, bingoItem: updatedText })
+        });
+
+        if (res.ok) {
+            document.querySelector(`div[data-id="${selectedItemId}"]`).textContent = updatedText;
+            Swal.fire({ toast: true, icon: 'success', title: 'Goal updated!' });
+        } else {
+            Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Failed to update goal` });
+        }
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ toast: true, icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        hideLoader();
+        editModal.style.display = 'none';
+    }
+});
 
 // Event listener for confirming completion
 confirmButton.addEventListener('click', function () {
