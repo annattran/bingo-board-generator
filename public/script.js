@@ -88,6 +88,7 @@ logoutButton.addEventListener('click', async () => {
         console.log("User signed out successfully.");
         toggleUI(false);
         heading.textContent = 'Bingo Board Generator';
+        editList.classList.add('hidden');
     } catch (error) {
         Swal.fire({
             toast: true,
@@ -349,7 +350,6 @@ async function loadItemsForList() {
 
         const bingoName = localStorage.getItem('bingoName');
         heading.textContent = bingoName || 'Bingo Board';
-        console.log(editList)
         editList.classList.remove('hidden');
         bingoItemsModal.style.display = 'none';
         toggleUI(true, true);
@@ -681,6 +681,7 @@ document.getElementById('deleteList').addEventListener('click', async () => {
             localStorage.removeItem('listId');
             localStorage.removeItem('bingoName');
             heading.textContent = 'Bingo Board Generator';
+            editList.classList.add('hidden');
             bingoBoard.classList.add('hidden');
         } else {
             throw new Error(data.error);
