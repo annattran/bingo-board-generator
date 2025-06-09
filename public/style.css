@@ -286,6 +286,28 @@ input:disabled {
     gap: 10px;
 }
 
+.modal .bingo-form .flex {
+    display: flex;
+}
+
+.modal .bingo-form .lineNumbers {
+    text-align: right;
+    padding-right: 8px;
+    user-select: none;
+    color: gray;
+}
+
+.modal .bingo-form textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.modal .bingo-form small {
+    color: red;
+    display: none;
+}
+
 .modal ol {
     max-height: 300px;
     overflow-y: auto;

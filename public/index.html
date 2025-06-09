@@ -117,7 +117,7 @@
             <form id="bingo-name-form" class="bingo-form">
                 <label for="bingoName">What do you want to call your board?</label>
                 <input type="text" id="bingoName" placeholder="e.g. 2025 Bingo" required>
-                <button type"submit" id="submit-name" class="">Next</button>
+                <button type="submit" id="submit-name" class="">Next</button>
             </form>
         </div>
     </div>
@@ -127,11 +127,13 @@
         <div class="modal-content">
             <span class="close-modal close">&times;</span>
             <form id="bingo-list-form" class="bingo-form">
-                <label for="bingo-goal">Enter 24 goals</label>
-                <input type="text" id="bingo-goal" required>
-                <ol id="bingo-list">
-                </ol>
-                <button type"submit" id="submit-list" disabled>Generate Bingo Board</button>
+                <label for="bingo-goal">Enter 24 goals, one per line</label>
+                <div class="flex">
+                    <div class="lineNumbers" id="lineNumbers"></div>
+                    <textarea id="bingoGoalsInput" rows="24"></textarea>
+                </div>
+                <small id="goalLimitMessage">Maximum 24 goals reached</small>
+                <button type="submit" id="submit-list">Generate Bingo Board</button>
             </form>
         </div>
     </div>

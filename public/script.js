@@ -36,6 +36,9 @@ const togglePasswordButtons = [
 const navButtonsContainer = document.getElementById("navButtonsContainer");
 const listContainer = document.getElementById('bingoLists');
 const selectListContainer = document.querySelector('.selectListContainer');
+const bingoGoalsInput = document.getElementById('bingoGoalsInput');
+const lineNumbers = document.getElementById('lineNumbers');
+const goalLimitMessage = document.getElementById('goalLimitMessage');
 
 function showLoader() {
     document.getElementById('loaderOverlay').classList.remove('hidden');
@@ -185,8 +188,6 @@ const bingoItemsModal = document.getElementById('bingo-items-modal');
 const closeModal = document.querySelectorAll('.close-modal');
 const createButton = document.getElementById('create');
 const submitNameForm = document.getElementById('bingo-name-form');
-const bingoGoal = document.getElementById('bingo-goal');
-const bingoList = document.getElementById('bingo-list');
 const submitListForm = document.getElementById('bingo-list-form');
 const generateButton = document.getElementById('submit-list');
 
@@ -278,64 +279,6 @@ function updateSelectDropdown(listId, bingoName) {
     listContainer.value = listId;
 }
 
-// Function to check the number of items and enable/disable submit button
-function checkItemCount() {
-    const items = document.querySelectorAll('#bingo-list li'); // Get all added items
-    if (items.length >= 24) {
-        bingoGoal.setAttribute('disabled', 'true');
-        generateButton.removeAttribute('disabled');
-    } else if (items.length < 24) {
-        bingoGoal.removeAttribute('disabled');
-        generateButton.setAttribute('disabled', 'true');
-    }
-}
-
-// Initialize a shuffled array of numbers from 1 to 24
-let orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
-
-// Function to add goal to Firebase
-async function addGoalToBackend(goalValue) {
-    const user = auth.currentUser;
-    const listId = localStorage.getItem('listId');
-
-    if (!user || !listId) {
-        console.error("Missing user or listId");
-        return false;
-    }
-
-    const items = document.querySelectorAll('#bingo-list li');
-    if (items.length >= 24) {
-        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: "You cannot add more than 24 items." });
-        return false;
-    }
-
-    showLoader();  // before starting
-    try {
-        const idToken = await user.getIdToken();
-        if (orderList.length === 0) {
-            orderList = shuffleArray(Array.from({ length: 24 }, (_, i) => i + 1));
-        }
-        const randomOrder = orderList.shift();
-
-        const res = await fetch('/.netlify/functions/addItemToBingoList', {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ bingoItem: goalValue, order: randomOrder, listId })
-        });
-
-        const data = await res.json();
-        if (res.ok) return true;
-        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Error: ${data.error}` });
-        return false;
-    } catch (error) {
-        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Request failed: ${error}` });
-        return false;
-    } finally {
-        checkItemCount();
-        hideLoader();  // always hide at the end
-    }
-}
-
 // Helper function to shuffle an array (Fisher-Yates algorithm)
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -345,34 +288,24 @@ function shuffleArray(array) {
     return array;
 }
 
-// When the user presses "Enter"
-bingoGoal.addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
+function updateLineNumbers() {
+    const lines = bingoGoalsInput.value.split('\n');
+    const count = lines.length;
 
-        const items = document.querySelectorAll('#bingo-list li');
-        if (items.length >= 24) {  // Ensure limit is 24
-            Swal.fire({
-                toast: true,
-                icon: 'error',
-                title: 'Oops...',
-                text: "You've reached the max number of items!",
-            });
-            return;
-        }
-
-        const goalValue = bingoGoal.value.trim();
-        if (!goalValue) return;
-
-        const added = await addGoalToBackend(goalValue);
-        if (added) {
-            const listItem = document.createElement('li');
-            listItem.textContent = goalValue;
-            bingoList.appendChild(listItem);
-            bingoGoal.value = '';
-            checkItemCount(); // Add this here to ensure the count is updated
-        }
+    if (count > 24) {
+        bingoGoalsInput.value = lines.slice(0, 24).join('\n');
+        goalLimitMessage.style.display = 'block';
+    } else {
+        goalLimitMessage.style.display = 'none';
     }
+
+    // Generate numbered lines
+    lineNumbers.innerHTML = Array.from({ length: Math.min(count, 24) }, (_, i) => `${i + 1}`).join('<br>');
+}
+
+bingoGoalsInput.addEventListener('input', updateLineNumbers);
+bingoGoalsInput.addEventListener('keydown', () => {
+    setTimeout(updateLineNumbers, 0); // after the key registers
 });
 
 async function loadItemsForList() {
@@ -380,8 +313,6 @@ async function loadItemsForList() {
     const listId = localStorage.getItem('listId');
 
     if (!user || !listId) return;
-    bingoGoal.removeAttribute('disabled');
-    bingoList.innerHTML = '';
     document.querySelectorAll('.bingo-cell:not(.free-space)').forEach(item => item.innerHTML = '');
 
     showLoader();  // before starting
@@ -396,11 +327,10 @@ async function loadItemsForList() {
         if (!res.ok) return console.error("Error retrieving bingo items:", data.error);
 
         if (data.items.length < 24) {
-            data.items.forEach(item => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = item.bingoItem;
-                bingoList.append(listItem);
-            });
+            const input = document.getElementById('bingoGoalsInput');
+            const sortedItems = data.items.sort((a, b) => a.order - b.order);
+            input.value = sortedItems.map(item => item.bingoItem).join('\n');
+            updateLineNumbers(); // <-- add this
             bingoItemsModal.style.display = 'block';
             return;
         }
@@ -430,19 +360,62 @@ async function loadItemsForList() {
 // Call loadItemsForList when submitting the form
 submitListForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const items = Array.from(document.querySelectorAll('#bingo-list li')).map(li => li.textContent);
+    const user = auth.currentUser;
+    const listId = localStorage.getItem('listId');
 
-    if (items.length !== 24) {
-        Swal.fire({
-            toast: true,
-            icon: 'error',
-            title: 'Oops...',
-            text: 'You need to add exactly 24 items (excluding the free space) before submitting.',
-        });
+    if (!user || !listId) {
+        console.error("Missing user or listId");
+        return false;
+    }
+
+    const idToken = await user.getIdToken();
+    const rawInput = document.getElementById('bingoGoalsInput').value.trim();
+    let goals = rawInput.split('\n').map(g => g.trim()).filter(g => g !== '');
+
+    if (goals.length === 0) {
+        Swal.fire({ icon: 'error', title: 'Please enter at least one goal.' });
         return;
     }
 
-    await loadItemsForList();
+    if (goals.length > 24) {
+        Swal.fire({ icon: 'error', title: 'Maximum of 24 goals allowed.' });
+        return;
+    }
+
+    // ✅ Shuffle the goals
+    if (goals.length === 24) {
+        goals = shuffleArray(goals);
+    }
+
+    showLoader();
+    try {
+        const res = await fetch('/.netlify/functions/submitBingoGoals', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${idToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ goals, listId })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || 'Failed to save bingo goals');
+        }
+
+        if (goals.length === 24) {
+            Swal.fire({ icon: 'success', title: 'Your bingo board is ready!' });
+        } else {
+            Swal.fire({ icon: 'warning', title: 'Board not generated yet', text: 'You need 24 goals to generate a board. Your progress is saved, so you can come back anytime to finish it!' });
+        }
+        await loadItemsForList();
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ icon: 'error', title: 'Error saving goals', text: err.message });
+    } finally {
+        hideLoader();
+    }
 });
 
 // When the user clicks anywhere outside the modal, close it
