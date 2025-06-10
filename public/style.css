@@ -229,6 +229,7 @@ input:disabled {
 
 .bingo-cell.free-space .edit-item {
     font-weight: bold;
+    display: flex;
 }
 
 .bingo-cell .edit-item {
