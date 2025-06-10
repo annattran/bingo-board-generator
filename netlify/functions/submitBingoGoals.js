@@ -51,7 +51,7 @@ exports.handler = async (event) => {
             bingoItems.splice(12, 0, {
                 id: 'free-space',
                 bingoItem: 'FREE SPACE',
-                completed: true
+                completed: false // let users mark it completed
             });
         }
 
