@@ -1,6 +1,6 @@
 // Import the necessary Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';  // Added signOut
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';  // Added signOut
 import { getFirestore, setDoc, doc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 // Your web app's Firebase configuration
@@ -186,6 +186,26 @@ togglePasswordButtons.forEach(button => {
     });
 });
 
+document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+
+    const { value: email } = await Swal.fire({
+        title: 'Reset your password',
+        input: 'email',
+        inputLabel: 'Enter your email address',
+        inputPlaceholder: 'you@example.com',
+        showCancelButton: true,
+    });
+
+    if (email) {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            Swal.fire({ icon: 'success', title: 'Email sent', text: 'Check your inbox for the reset link.' });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Error', text: error.message });
+        }
+    }
+});
 
 // Get modal element
 const bingoNameModal = document.getElementById('bingo-name-modal');

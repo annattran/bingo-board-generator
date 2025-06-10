@@ -93,6 +93,13 @@ h2 {
     width: 100%;
 }
 
+.authContainer a {
+    text-decoration: none;
+    color: #007BFF;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
 .authContainer button[type="submit"] {
     margin-top: 30px;
 }
