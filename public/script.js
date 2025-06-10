@@ -195,7 +195,7 @@ const generateButton = document.getElementById('submit-list');
 
 // When the "create" button is clicked, show the modal
 createButton.addEventListener('click', () => {
-    bingoNameModal.style.display = 'block';
+    bingoNameModal.style.display = 'flex';
 });
 
 // When the user clicks the "X", close the modal
@@ -245,7 +245,7 @@ submitNameForm.addEventListener('submit', async (e) => {
             localStorage.setItem('listId', data.id);
             localStorage.setItem('bingoName', bingoName);
             bingoNameModal.style.display = 'none';
-            bingoItemsModal.style.display = 'block';
+            bingoItemsModal.style.display = 'flex';
             submitNameForm.reset();
             updateSelectDropdown(data.id, bingoName);
 
@@ -333,7 +333,7 @@ async function loadItemsForList() {
             const sortedItems = data.items.sort((a, b) => a.order - b.order);
             input.value = sortedItems.map(item => item.bingoItem).join('\n');
             updateLineNumbers(); // <-- add this
-            bingoItemsModal.style.display = 'block';
+            bingoItemsModal.style.display = 'flex';
             return;
         }
 
@@ -450,13 +450,13 @@ bingoBoard.addEventListener('click', function (event) {
         document.getElementById('edit-goal-text').value = itemElement.textContent.trim();
 
         // Show the modal
-        editModal.style.display = 'block';
+        editModal.style.display = 'flex';
     }
 });
 
 editList.addEventListener('click', function (event) {
     // Show the modal
-    editListModal.style.display = 'block';
+    editListModal.style.display = 'flex';
 });
 
 // Function to mark an item as completed or incomplete

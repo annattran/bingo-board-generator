@@ -267,6 +267,8 @@ input:disabled {
 .modal {
     display: none;
     /* Hidden by default */
+    justify-content: center;
+    align-items: center;
     position: fixed;
     z-index: 1;
     left: 0;
@@ -275,16 +277,17 @@ input:disabled {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
     /* Black background with opacity */
-    padding-top: 60px;
+    padding: 20px;
 }
 
 .modal-content {
     background-color: white;
-    margin: 5% auto;
     padding: 40px;
     border: 1px solid #888;
     width: 100%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
 }
 
@@ -397,6 +400,10 @@ input:disabled {
 
     button {
         min-width: auto;
+    }
+
+    .modal-content {
+        padding: 20px;
     }
 
     .modal .button-container {
