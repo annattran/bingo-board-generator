@@ -325,7 +325,7 @@ input:disabled {
     width: 100%;
     font-family: inherit;
     font-size: inherit;
-    padding: 0 5px;
+    padding: 10px;
 }
 
 .modal .bingo-form .flex {
@@ -337,6 +337,7 @@ input:disabled {
     padding-right: 8px;
     user-select: none;
     color: gray;
+    padding: 10px 8px 10px 0;
 }
 
 .modal .bingo-form small {
@@ -413,12 +414,11 @@ input:disabled {
     }
 
     .modal-content {
-        padding: 20px;
+        padding: 15px;
     }
 
     .modal .button-container {
-        flex-direction: column;
-        gap: 0;
+        gap: 5px;
     }
 }
 
