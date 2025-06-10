@@ -60,6 +60,9 @@ function toggleUI(userSignedIn, hasList = false) {
     // Toggle visibility of nav buttons
     navButtonsContainer.classList.toggle('hidden', !hideAuth);
 
+    // Toggle position of nav buttons
+    navButtonsContainer.classList.toggle('position', showBingoBoard);
+
     // Toggle visibility of grocery form
     bingoBoard.classList.toggle('hidden', !showBingoBoard);
 
