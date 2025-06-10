@@ -227,7 +227,7 @@ input:disabled {
     border-left: 1px solid black;
 }
 
-.bingo-cell.free-space {
+.bingo-cell.free-space .edit-item {
     font-weight: bold;
 }
 

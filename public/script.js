@@ -480,6 +480,9 @@ window.addEventListener('click', (event) => {
 
 // Get the parent container that holds the bingo items
 const editModal = document.getElementById('edit-modal');
+const editTextarea = document.getElementById('edit-goal-text');
+const editLabel = document.getElementById('edit-label');
+const saveEditButton = document.getElementById('save-edit');
 const editListModal = document.getElementById('edit-list-modal');
 const confirmButton = document.getElementById('mark-completed');
 const cancelButton = document.getElementById('mark-incomplete');
@@ -489,16 +492,23 @@ let selectedItemId = null;
 
 // Event delegation: Listen for click events on the parent container
 bingoBoard.addEventListener('click', function (event) {
-    // Check if the clicked element is an edit button
     if (event.target && event.target.classList.contains('edit-item')) {
         const itemElement = event.target;
-        // Get the item ID from the closest parent <li> element's data-item-id attribute
-        selectedItemId = itemElement.closest('div').getAttribute('data-id');
+        const itemId = itemElement.closest('div').getAttribute('data-id');
+        selectedItemId = itemId;
 
-        // Fill the textarea with the current text
-        document.getElementById('edit-goal-text').value = itemElement.textContent.trim();
+        const isFreeSpace = itemId === 'free-space';
 
-        // Show the modal
+        // Toggle textarea and save button visibility
+        editTextarea.style.display = isFreeSpace ? 'none' : 'block';
+        editLabel.style.display = isFreeSpace ? 'none' : 'block';
+        saveEditButton.style.display = isFreeSpace ? 'none' : 'inline-block';
+
+        // If not free-space, populate text
+        if (!isFreeSpace) {
+            editTextarea.value = itemElement.textContent.trim();
+        }
+
         editModal.style.display = 'flex';
     }
 });
