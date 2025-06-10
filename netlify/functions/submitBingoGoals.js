@@ -11,7 +11,7 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
         const uid = decodedToken.uid;
 
         const { goals, listId } = JSON.parse(event.body);
-        if (!Array.isArray(goals) || listId === undefined) {
+        if (!Array.isArray(goals) || !listId) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ error: 'Goals array and listId are required' }),
@@ -40,29 +40,30 @@ exports.handler = async (event, context) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Bingo list not found' }) };
         }
 
-        // 🔄 Clear existing items
-        const existingItemsSnapshot = await bingoListRef.collection('items').get();
-        const deleteBatch = db.batch();
-        existingItemsSnapshot.forEach(doc => deleteBatch.delete(doc.ref));
-        await deleteBatch.commit();
+        // 🔄 Build updated bingoItems array
+        const bingoItems = goals.map((goal, index) => ({
+            id: `goal-${index}`,
+            bingoItem: goal,
+            completed: false
+        }));
 
-        // ➕ Add new items
-        const batch = db.batch();
-        goals.forEach((goal, index) => {
-            const itemRef = bingoListRef.collection('items').doc();
-            batch.set(itemRef, {
-                item: goal,
-                order: index,
-                completed: false
+        if (goals.length === 24) {
+            bingoItems.splice(12, 0, {
+                id: 'free-space',
+                bingoItem: 'FREE SPACE',
+                completed: true
             });
+        }
+
+        // Assign unique order values
+        bingoItems.forEach((item, index) => {
+            item.order = index;
         });
 
-        await batch.commit();
-
-        // ✅ Update isComplete flag if exactly 24 goals submitted
         await bingoListRef.update({
-            isComplete: goals.length === 24
-        });
+            bingoItems,
+            isComplete: bingoItems.length === 25
+        });        
 
         return { statusCode: 200, body: JSON.stringify({ message: 'Goals saved successfully' }) };
     } catch (error) {

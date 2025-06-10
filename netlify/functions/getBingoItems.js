@@ -15,7 +15,7 @@ try {
 
 const db = admin.firestore();
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     if (event.httpMethod !== 'GET') {
         return {
             statusCode: 405,
@@ -56,17 +56,12 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const itemsSnapshot = await bingoListRef.collection('items').get();
-        const itemsWithId = itemsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            bingoItem: doc.data().item,
-            order: doc.data().order,
-            completed: doc.data().completed
-        }));
+        const data = bingoListDoc.data();
+        const bingoItems = data.bingoItems || [];
 
         return {
             statusCode: 200,
-            body: JSON.stringify({ items: itemsWithId }),
+            body: JSON.stringify({ items: bingoItems }),
         };
     } catch (error) {
         console.error('Error fetching bingo items:', error);

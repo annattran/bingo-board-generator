@@ -361,14 +361,38 @@ async function loadItemsForList() {
         }
 
         const sortedItems = data.items.sort((a, b) => a.order - b.order);
-        const cells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
-        sortedItems.forEach((item, index) => {
+        const freeSpaceCell = document.querySelector('.bingo-cell.free-space');
+        const regularCells = Array.from(document.querySelectorAll('.bingo-cell:not(.free-space)'));
+
+        // Clear all cells
+        freeSpaceCell.innerHTML = '';
+        regularCells.forEach(cell => cell.innerHTML = '');
+
+        // Populate cells
+        sortedItems.forEach(item => {
             const div = document.createElement('div');
             div.classList.add('edit-item');
             div.setAttribute('data-id', item.id);
             div.setAttribute('data-completed', item.completed);
-            div.textContent = item.bingoItem;
-            cells[index].append(div);
+            div.textContent = item.bingoItem || item.item;
+
+            // Handle FREE SPACE at center
+            if (
+                (item.bingoItem === 'FREE SPACE' || item.item === 'FREE SPACE') &&
+                item.order === 12
+            ) {
+                freeSpaceCell.append(div);
+            } else {
+                // Adjust index to skip over free space (order 12)
+                const adjustedIndex = item.order > 12 ? item.order - 1 : item.order;
+                const cell = regularCells[adjustedIndex];
+
+                if (cell) {
+                    cell.append(div);
+                } else {
+                    console.warn(`⚠️ No cell found for order ${item.order}`);
+                }
+            }
         });
 
         const bingoName = localStorage.getItem('bingoName');

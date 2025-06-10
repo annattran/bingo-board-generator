@@ -15,7 +15,7 @@ try {
 
 const db = admin.firestore();
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     if (event.httpMethod !== 'PUT') {
         return {
             statusCode: 405,
@@ -60,36 +60,30 @@ exports.handler = async (event, context) => {
 
     try {
         const bingoListRef = db.collection('users').doc(userId).collection('bingoLists').doc(listId);
-        const itemRef = bingoListRef.collection('items').doc(itemId);
-        const itemDoc = await itemRef.get();
+        const bingoListDoc = await bingoListRef.get();
 
-        if (!itemDoc.exists) {
+        if (!bingoListDoc.exists) {
             return {
                 statusCode: 404,
-                body: JSON.stringify({ error: 'Bingo item not found' }),
+                body: JSON.stringify({ error: 'Bingo list not found' }),
             };
         }
 
-        const updateFields = {};
-        if (completed !== undefined) updateFields.completed = completed;
-        if (bingoItem !== undefined) updateFields.item = bingoItem;
+        const listData = bingoListDoc.data();
+        const bingoItems = listData.bingoItems || [];
 
-        await itemRef.update(updateFields);
-
-        // Optional: Update bingoItems array in parent list doc
-        const bingoListDoc = await bingoListRef.get();
-        if (bingoListDoc.exists) {
-            const listData = bingoListDoc.data();
-            const bingoItems = listData.bingoItems || [];
-
-            const itemIndex = bingoItems.findIndex(item => item.id === itemId);
-            if (itemIndex !== -1) {
-                if (completed !== undefined) bingoItems[itemIndex].completed = completed;
-                if (bingoItem !== undefined) bingoItems[itemIndex].bingoItem = bingoItem;
-
-                await bingoListRef.update({ bingoItems });
-            }
+        const itemIndex = bingoItems.findIndex(item => item.id === itemId);
+        if (itemIndex === -1) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ error: 'Bingo item not found in list' }),
+            };
         }
+
+        if (completed !== undefined) bingoItems[itemIndex].completed = completed;
+        if (bingoItem !== undefined) bingoItems[itemIndex].bingoItem = bingoItem;
+
+        await bingoListRef.update({ bingoItems });
 
         return {
             statusCode: 200,

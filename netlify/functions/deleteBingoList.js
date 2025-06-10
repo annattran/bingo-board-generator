@@ -19,12 +19,6 @@ exports.handler = async (event) => {
         const userRef = db.collection('users').doc(decoded.uid);
         await userRef.collection('bingoLists').doc(listId).delete();
 
-        // Optionally delete the related bingoItems
-        const itemsSnap = await userRef.collection('bingoLists').doc(listId).collection('bingoItems').get();
-        const batch = db.batch();
-        itemsSnap.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-
         return { statusCode: 200, body: JSON.stringify({ message: 'List deleted successfully!' }) };
     } catch (err) {
         return { statusCode: 400, body: JSON.stringify({ error: err.message }) };
