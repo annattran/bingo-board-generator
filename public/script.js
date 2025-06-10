@@ -374,6 +374,8 @@ async function loadItemsForList() {
         const bingoName = localStorage.getItem('bingoName');
         heading.textContent = bingoName || 'Bingo Board';
         editList.classList.remove('hidden');
+        hasBingo = false; // reset for new board
+        monitorBingoWin();
         bingoItemsModal.style.display = 'none';
         toggleUI(true, true);
     } catch (error) {
@@ -515,6 +517,7 @@ async function updateItemCompletion(completedStatus) {
         hideLoader();  // always hide at the end
     }
     editModal.style.display = 'none';
+    monitorBingoWin();
 }
 
 document.getElementById('save-edit').addEventListener('click', async () => {
@@ -715,3 +718,49 @@ document.getElementById('deleteList').addEventListener('click', async () => {
         hideLoader();
     }
 });
+
+let hasBingo = false;
+
+function isCellCompleted(cell) {
+    return cell.querySelector('.edit-item')?.getAttribute('data-completed') === 'true';
+}
+
+function checkBingoWin() {
+    const cells = Array.from(document.querySelectorAll('.bingo-cell'));
+    if (cells.length !== 25) return;
+
+    const grid = [];
+    for (let i = 0; i < 5; i++) {
+        grid.push(cells.slice(i * 5, i * 5 + 5));
+    }
+
+    // Check rows
+    for (let row of grid) {
+        if (row.every(isCellCompleted)) return true;
+    }
+
+    // Check columns
+    for (let col = 0; col < 5; col++) {
+        if (grid.every(row => isCellCompleted(row[col]))) return true;
+    }
+
+    // Check diagonals
+    if (grid.every((row, i) => isCellCompleted(row[i]))) return true;
+    if (grid.every((row, i) => isCellCompleted(row[4 - i]))) return true;
+
+    return false;
+}
+
+// Recheck for bingo win after marking items
+function monitorBingoWin() {
+    if (hasBingo) return;
+    if (checkBingoWin()) {
+        hasBingo = true;
+        Swal.fire({
+            icon: 'success',
+            title: '🎉 Bingo!',
+            text: 'You completed 5 in a row!',
+            confirmButtonText: 'Nice!'
+        });
+    }
+}
