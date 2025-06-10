@@ -287,7 +287,7 @@ input:disabled {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
     /* Black background with opacity */
-    padding: 20px;
+    padding: 15px;
 }
 
 .modal-content {
@@ -414,7 +414,7 @@ input:disabled {
     }
 
     .modal-content {
-        padding: 15px;
+        padding: 20px;
     }
 
     .modal .button-container {

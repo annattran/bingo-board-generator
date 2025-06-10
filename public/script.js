@@ -626,7 +626,7 @@ document.getElementById('editListName').addEventListener('click', async () => {
     if (!user || !listId) return;
 
     const { value: newName } = await Swal.fire({
-        title: 'Rename Bingo List',
+        title: 'Rename List',
         input: 'text',
         inputLabel: 'New list name',
         inputValue: localStorage.getItem('bingoName'),
