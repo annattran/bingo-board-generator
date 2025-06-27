@@ -108,11 +108,14 @@ logoutBtn?.addEventListener('click', async () => {
 forgotPasswordLink?.addEventListener('click', async () => {
     const email = prompt('Enter your email to reset password:');
     if (email) {
+        showLoader(); // <-- ADD
         try {
             await sendResetEmail(email);
             Swal.fire('Reset email sent.', '', 'success');
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+        } finally {
+            hideLoader(); // <-- ADD
         }
     }
 });

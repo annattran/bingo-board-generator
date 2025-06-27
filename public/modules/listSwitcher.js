@@ -9,36 +9,43 @@ import { toggleUI } from './ui.js';
 
 export async function populateBingoListsDropdown(selectListId = null) {
     const token = getCachedIdToken();
-    const { bingoLists } = await apiFetch('getBingoLists', 'GET', null, token);
-    const listContainer = document.getElementById('bingoLists');
+    showLoader(); // <-- ADD THIS
+    try {
+        const { bingoLists } = await apiFetch('getBingoLists', 'GET', null, token);
+        const listContainer = document.getElementById('bingoLists');
 
-    listContainer.innerHTML = '';
+        listContainer.innerHTML = '';
 
-    for (const list of bingoLists) {
-        const option = document.createElement('option');
-        option.value = list.id;
-        option.textContent = list.bingoName;
-        option.dataset.name = list.bingoName;
-        listContainer.appendChild(option);
-    }
+        for (const list of bingoLists) {
+            const option = document.createElement('option');
+            option.value = list.id;
+            option.textContent = list.bingoName;
+            option.dataset.name = list.bingoName;
+            listContainer.appendChild(option);
+        }
 
-    const hasAnyLists = bingoLists.length > 0;
-    if (!hasAnyLists) {
-        toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
+        const hasAnyLists = bingoLists.length > 0;
+        if (!hasAnyLists) {
+            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
+            return [];
+        }
+
+        const selected = selectListId || localStorage.getItem('listId') || bingoLists[0].id;
+        const selectedList = bingoLists.find(l => l.id === selected);
+
+        if (selectedList) {
+            localStorage.setItem('listId', selectedList.id);
+            localStorage.setItem('bingoName', selectedList.bingoName);
+            listContainer.value = selectedList.id;
+        }
+
+        return bingoLists;
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'List Load Error', text: err.message });
         return [];
+    } finally {
+        hideLoader(); // <-- ADD THIS
     }
-
-    // Select either provided listId or fallback to the first
-    const selected = selectListId || localStorage.getItem('listId') || bingoLists[0].id;
-    const selectedList = bingoLists.find(l => l.id === selected);
-
-    if (selectedList) {
-        localStorage.setItem('listId', selectedList.id);
-        localStorage.setItem('bingoName', selectedList.bingoName);
-        listContainer.value = selectedList.id;
-    }
-
-    return bingoLists;
 }
 
 export function bindDropdownHandler() {

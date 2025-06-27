@@ -9,79 +9,82 @@ let hasBingo = false;
 const loader = document.getElementById('loaderOverlay');
 
 export function renderBingoBoard(items) {
-    const cells = document.querySelectorAll('.bingo-cell');
-    const freeSpaceIndex = 12;
-    const getLabel = item => item.item || item.bingoItem || '';
+    loader.classList.remove('hidden'); // <-- Show before rendering
 
-    const listWithoutFree = items.filter(i => getLabel(i).toUpperCase() !== 'FREE SPACE');
+    try {
+        const cells = document.querySelectorAll('.bingo-cell');
+        const freeSpaceIndex = 12;
+        const getLabel = item => item.item || item.bingoItem || '';
 
-    if (listWithoutFree.length < 24) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Board not generated yet',
-            text: 'You need 24 goals to generate a board. Your progress is saved, so you can come back anytime to finish it.',
-            confirmButtonText: 'Got it'
-        });
+        const listWithoutFree = items.filter(i => getLabel(i).toUpperCase() !== 'FREE SPACE');
 
-        // Clear any visible board if an incomplete one slips through
-        document.querySelectorAll('.bingo-cell').forEach(cell => {
+        if (listWithoutFree.length < 24) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Board not generated yet',
+                text: 'You need 24 goals to generate a board. Your progress is saved, so you can come back anytime to finish it.',
+                confirmButtonText: 'Got it'
+            });
+
+            document.querySelectorAll('.bingo-cell').forEach(cell => {
+                cell.innerHTML = '';
+                cell.removeAttribute('data-completed');
+            });
+
+            return;
+        }
+
+        const freeItem = items.find(i => getLabel(i).toUpperCase() === 'FREE SPACE') || {
+            id: 'free-space',
+            item: 'FREE SPACE',
+            completed: true,
+            notes: ''
+        };
+
+        hasBingo = false;
+        cells.forEach(cell => {
             cell.innerHTML = '';
             cell.removeAttribute('data-completed');
         });
 
-        return;
+        const freeDiv = document.createElement('div');
+        freeDiv.className = 'edit-item';
+        freeDiv.dataset.id = freeItem.id;
+        freeDiv.dataset.completed = freeItem.completed;
+        freeDiv.dataset.notes = freeItem.notes;
+        freeDiv.textContent = getLabel(freeItem);
+        cells[freeSpaceIndex].appendChild(freeDiv);
+        cells[freeSpaceIndex].dataset.completed = freeItem.completed;
+
+        listWithoutFree.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'edit-item';
+            div.dataset.id = item.id;
+            div.dataset.completed = item.completed;
+            div.dataset.notes = item.notes || '';
+            div.textContent = getLabel(item);
+
+            const index = i >= freeSpaceIndex ? i + 1 : i;
+            if (cells[index]) {
+                cells[index].appendChild(div);
+                cells[index].dataset.completed = item.completed;
+            }
+        });
+
+        monitorBingoWin(() => {
+            if (!hasBingo) {
+                hasBingo = true;
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 Bingo!',
+                    text: 'You completed 5 in a row!',
+                    confirmButtonText: 'Nice!'
+                });
+            }
+        });
+    } finally {
+        loader.classList.add('hidden'); // <-- Always hide loader after render
     }
-
-    const freeItem = items.find(i => getLabel(i).toUpperCase() === 'FREE SPACE') || {
-        id: 'free-space',
-        item: 'FREE SPACE',
-        completed: true,
-        notes: ''
-    };
-
-    hasBingo = false;
-    cells.forEach(cell => {
-        cell.innerHTML = '';
-        cell.removeAttribute('data-completed');
-    });
-
-    // FREE SPACE
-    const freeDiv = document.createElement('div');
-    freeDiv.className = 'edit-item';
-    freeDiv.dataset.id = freeItem.id;
-    freeDiv.dataset.completed = freeItem.completed;
-    freeDiv.dataset.notes = freeItem.notes;
-    freeDiv.textContent = getLabel(freeItem);
-    cells[freeSpaceIndex].appendChild(freeDiv);
-    cells[freeSpaceIndex].dataset.completed = freeItem.completed;
-
-    // Regular goals
-    listWithoutFree.forEach((item, i) => {
-        const div = document.createElement('div');
-        div.className = 'edit-item';
-        div.dataset.id = item.id;
-        div.dataset.completed = item.completed;
-        div.dataset.notes = item.notes || '';
-        div.textContent = getLabel(item);
-
-        const index = i >= freeSpaceIndex ? i + 1 : i;
-        if (cells[index]) {
-            cells[index].appendChild(div);
-            cells[index].dataset.completed = item.completed;
-        }
-    });
-
-    monitorBingoWin(() => {
-        if (!hasBingo) {
-            hasBingo = true;
-            Swal.fire({
-                icon: 'success',
-                title: '🎉 Bingo!',
-                text: 'You completed 5 in a row!',
-                confirmButtonText: 'Nice!'
-            });
-        }
-    });
 }
 
 // --- Edit modal ---
