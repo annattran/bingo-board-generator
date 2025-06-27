@@ -113,11 +113,26 @@ export function bindListEditHandlers(heading, listContainer, editList, editListM
 
             Swal.fire({ icon: 'success', title: 'List deleted!' });
             listContainer.querySelector(`option[value="${listId}"]`)?.remove();
-            localStorage.removeItem('listId');
-            localStorage.removeItem('bingoName');
-            heading.textContent = 'Bingo Board Generator';
-            editList.classList.add('hidden');
-            document.getElementById('bingo-board').classList.add('hidden');
+
+            const nextOption = listContainer.querySelector('option');
+            if (nextOption) {
+                const nextListId = nextOption.value;
+                listContainer.value = nextListId;
+                localStorage.setItem('listId', nextListId);
+                localStorage.setItem('bingoName', nextOption.dataset.name || 'Bingo Board');
+                document.querySelector('h1').textContent = nextOption.dataset.name || 'Bingo Board';
+
+                // Manually trigger list change
+                const event = new Event('change');
+                listContainer.dispatchEvent(event);
+            } else {
+                // No lists left
+                localStorage.removeItem('listId');
+                localStorage.removeItem('bingoName');
+                heading.textContent = 'Bingo Board Generator';
+                editList.classList.add('hidden');
+                document.getElementById('bingo-board').classList.add('hidden');
+            }
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error deleting', text: err.message });
         } finally {
