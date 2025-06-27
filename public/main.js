@@ -125,6 +125,7 @@ submitNameForm?.addEventListener('submit', async (e) => {
         const { id } = await apiFetch('createBingoList', 'POST', { bingoName: name }, token);
         localStorage.setItem('listId', id);
         localStorage.setItem('bingoName', name);
+        document.querySelector('h1').textContent = name; // ✅ update title
         await populateBingoListsDropdown(id);
         hideModal('bingo-name-modal');
         showModal('bingo-items-modal');
