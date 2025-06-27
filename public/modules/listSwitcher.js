@@ -7,6 +7,9 @@ import { updateLineNumbers } from './goalInput.js';
 import { showLoader, hideLoader } from './loader.js';
 import { toggleUI } from './ui.js';
 
+let currentListId = null; // 🔒 track currently loaded list
+let changeTimeout = null;
+
 export async function populateBingoListsDropdown(selectListId = null) {
     const token = getCachedIdToken();
     showLoader();
@@ -52,13 +55,14 @@ export function bindDropdownHandler() {
     const dropdown = document.getElementById('bingoLists');
     if (!dropdown) return;
 
-    const handleListChange = async (listId) => {
-        if (!listId) return;
+    const handleListChange = async (listId, forceReload = false) => {
+        if (!listId || (!forceReload && listId === currentListId)) return;
 
+        currentListId = listId;
+        localStorage.setItem('listId', listId);
         showLoader();
-        try {
-            localStorage.setItem('listId', listId);
 
+        try {
             const token = getCachedIdToken();
             const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
             const input = document.getElementById('bingoGoalsInput');
@@ -91,14 +95,17 @@ export function bindDropdownHandler() {
         }
     };
 
-    // When selection changes
-    dropdown.addEventListener('change', (e) => handleListChange(e.target.value));
+    // Debounced change handler
+    dropdown.addEventListener('change', (e) => {
+        const listId = e.target.value;
+        if (changeTimeout) clearTimeout(changeTimeout);
+        changeTimeout = setTimeout(() => handleListChange(listId), 100);
+    });
 
-    // BONUS: When user re-clicks same option, manually trigger
+    // Re-click same option to force reload (useful after editing goals)
     dropdown.addEventListener('click', (e) => {
-        // ✅ Only respond if an actual <option> is clicked that matches the current value
         if (e.target?.tagName === 'OPTION' && e.target.value === dropdown.value) {
-            handleListChange(dropdown.value);
+            handleListChange(dropdown.value, true);
         }
     });
 }

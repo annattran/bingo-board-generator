@@ -5,7 +5,6 @@ import { getCachedIdToken } from './auth.js';
 
 const loader = document.getElementById('loaderOverlay');
 
-let bingoObserverInitialized = false;
 let previousBingoCount = 0;
 
 export function renderBingoBoard(items) {
@@ -163,9 +162,10 @@ document.getElementById('save-edit')?.addEventListener('click', async () => {
 // --- Bingo Detection ---
 export function monitorBingoWin() {
     const board = document.getElementById('bingo-board');
-    if (!board || bingoObserverInitialized) return;
+    if (!board) return;
 
-    bingoObserverInitialized = true;
+    // 🔁 Always reset and create a new observer
+    bingoObserverInitialized = false;
 
     const isCompleted = el => el?.dataset.completed === 'true';
     const cells = board.querySelectorAll('.bingo-cell');
@@ -213,4 +213,6 @@ export function monitorBingoWin() {
     const initialCount = countBingos();
     previousBingoCount = initialCount;
     if (initialCount > 0) showBingoAlert(initialCount);
+
+    bingoObserverInitialized = true; // ✅ Only mark true after setup is done
 }

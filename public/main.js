@@ -14,6 +14,7 @@ import { showLoader, hideLoader } from './modules/loader.js';
 import { populateBingoListsDropdown, bindDropdownHandler } from './modules/listSwitcher.js';
 import { toggleUI } from './modules/ui.js';
 
+// --- Firebase Init ---
 const firebaseConfig = {
     apiKey: "AIzaSyAl7GQZH6h4ucA_wEAeljoOhsvnNjMDuyU",
     authDomain: "bingo-board-generator.firebaseapp.com",
@@ -22,9 +23,8 @@ const firebaseConfig = {
     messagingSenderId: "370710005056",
     appId: "1:370710005056:web:9780f422e38a246557e6a5"
 };
-
-const app = initializeApp(firebaseConfig);
-initAuth(app);
+initializeApp(firebaseConfig);
+initAuth();
 
 // --- UI Elements ---
 const loginForm = document.getElementById('emailLoginForm');
@@ -35,7 +35,7 @@ const createBtn = document.getElementById('create');
 const submitNameForm = document.getElementById('bingo-name-form');
 const submitListForm = document.getElementById('bingo-list-form');
 
-// --- Toggle Auth Views ---
+// --- Auth UI Toggles ---
 const toggleLoginViewBtns = document.querySelectorAll('#toggleLoginView');
 const toggleSignupViewBtns = document.querySelectorAll('#toggleSignupView');
 const loginContainer = document.getElementById('emailLoginContainer');
@@ -47,17 +47,15 @@ function toggleAuthView(showLogin) {
     toggleLoginViewBtns.forEach(btn => btn.classList.toggle('active', showLogin));
     toggleSignupViewBtns.forEach(btn => btn.classList.toggle('active', !showLogin));
 }
-
 toggleLoginViewBtns.forEach(btn => btn.addEventListener('click', () => toggleAuthView(true)));
 toggleSignupViewBtns.forEach(btn => btn.addEventListener('click', () => toggleAuthView(false)));
 
-// --- Password Toggle ---
+// --- Password Visibility Toggle ---
 document.querySelectorAll('#togglePassword, #toggleSignupPassword').forEach(button => {
     button.addEventListener('click', () => {
         const input = button.previousElementSibling;
         const icon = button.querySelector('i');
         const isHidden = input.type === 'password';
-
         input.type = isHidden ? 'text' : 'password';
         icon.classList.toggle('fa-eye', !isHidden);
         icon.classList.toggle('fa-eye-slash', isHidden);
@@ -68,14 +66,9 @@ document.querySelectorAll('#togglePassword, #toggleSignupPassword').forEach(butt
 loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showLoader();
-
-    // Force the loader to visually display before proceeding
-    await new Promise(requestAnimationFrame);
-
+    await new Promise(requestAnimationFrame); // ensure loader is visible
     try {
-        const { value: email } = loginForm.email;
-        const { value: password } = loginForm.password;
-        await handleLogin(email, password);
+        await handleLogin(loginForm.email.value, loginForm.password.value);
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Login Failed', text: err.message });
     } finally {
@@ -87,9 +80,7 @@ signupForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showLoader();
     try {
-        const email = signupForm.signupEmail.value;
-        const password = signupForm.signupPassword.value;
-        await handleSignup(email, password);
+        await handleSignup(signupForm.signupEmail.value, signupForm.signupPassword.value);
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Signup Failed', text: err.message });
     } finally {
@@ -100,26 +91,24 @@ signupForm?.addEventListener('submit', async (e) => {
 logoutBtn?.addEventListener('click', async () => {
     showLoader();
     try {
-        await handleLogout(); // Just sign out — cleanup happens in onAuthChange
+        await handleLogout(); // cleanup will be handled in onAuthChange
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Logout Failed', text: err.message });
-    } finally {
-        // Do NOT hideLoader here — let onAuthChange handle that after cleanup
+        hideLoader();
     }
 });
 
 forgotPasswordLink?.addEventListener('click', async () => {
     const email = prompt('Enter your email to reset password:');
-    if (email) {
-        showLoader(); // <-- ADD
-        try {
-            await sendResetEmail(email);
-            Swal.fire('Reset email sent.', '', 'success');
-        } catch (err) {
-            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
-        } finally {
-            hideLoader(); // <-- ADD
-        }
+    if (!email) return;
+    showLoader();
+    try {
+        await sendResetEmail(email);
+        Swal.fire('Reset email sent.', '', 'success');
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        hideLoader();
     }
 });
 
@@ -132,15 +121,10 @@ submitNameForm?.addEventListener('submit', async (e) => {
     try {
         const name = submitNameForm.bingoName.value;
         const token = getCachedIdToken();
-
-        // Create list
         const { id } = await apiFetch('createBingoList', 'POST', { bingoName: name }, token);
         localStorage.setItem('listId', id);
         localStorage.setItem('bingoName', name);
-
-        // ✅ Update dropdown and set new value
         await populateBingoListsDropdown(id);
-
         hideModal('bingo-name-modal');
         showModal('bingo-items-modal');
     } catch (err) {
@@ -174,81 +158,54 @@ submitListForm?.addEventListener('submit', async (e) => {
     }
 });
 
-// --- Auth Change Handler ---
+// --- Auth Change Watcher ---
 onAuthChange(async (user) => {
-    const isSignedIn = !!user;
+    const signedIn = !!user;
+    showLoader();
 
-    if (!isSignedIn) {
-        // 🔁 Full logout cleanup here
-        localStorage.removeItem('listId');
-        localStorage.removeItem('bingoName');
-
-        document.getElementById('emailLoginForm')?.reset();
-        document.getElementById('emailSignupForm')?.reset();
-        document.getElementById('bingo-name-form')?.reset();
-        document.getElementById('bingo-list-form')?.reset();
-
+    if (!signedIn) {
+        localStorage.clear();
+        document.querySelectorAll('form').forEach(f => f.reset());
         document.querySelectorAll('.bingo-cell').forEach(cell => {
             cell.innerHTML = '';
             cell.removeAttribute('data-completed');
         });
-
-        const dropdown = document.getElementById('bingoLists');
-        if (dropdown) dropdown.innerHTML = '';
-
-        hideModal('bingo-name-modal');
-        hideModal('bingo-items-modal');
-        hideModal('edit-modal');
-        hideModal('edit-list-modal');
-
+        document.getElementById('bingoLists')?.replaceChildren();
+        ['bingo-name-modal', 'bingo-items-modal', 'edit-modal', 'edit-list-modal'].forEach(hideModal);
         toggleAuthView(true);
         toggleUI({ userSignedIn: false, hasList: false, hasAnyLists: false });
-
-        hideLoader(); // ✅ done after full logout
+        hideLoader();
         return;
     }
 
-    // Start loading — don't hide until UI is fully ready
-    showLoader();
-
     try {
-        // Reset stale localStorage
-        localStorage.removeItem('listId');
-        localStorage.removeItem('bingoName');
-
         const bingoLists = await populateBingoListsDropdown();
-        const hasAnyLists = bingoLists.length > 0;
-
         bindDropdownHandler();
 
-        if (!hasAnyLists) {
-            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
+        const hasAnyLists = bingoLists.length > 0;
+        const listId = localStorage.getItem('listId');
+
+        if (!hasAnyLists || !listId) {
+            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
             return;
         }
 
-        const listId = localStorage.getItem('listId');
         const token = getCachedIdToken();
         const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
+        const sortedItems = items.sort((a, b) => a.order - b.order);
 
-        if (items.length < 24) {
-            document.getElementById('bingoGoalsInput').value = items
-                .sort((a, b) => a.order - b.order)
-                .map(item => item.bingoItem || item.item)
-                .join('\n');
+        if (sortedItems.length < 24) {
+            document.getElementById('bingoGoalsInput').value = sortedItems.map(i => i.bingoItem || i.item).join('\n');
             updateLineNumbers();
-
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
             showModal('bingo-items-modal');
         } else {
-            const sortedItems = items.sort((a, b) => a.order - b.order);
             renderBingoBoard(sortedItems);
             toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
         }
-
     } catch (err) {
-        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+        Swal.fire({ icon: 'error', title: 'Error loading board', text: err.message });
     } finally {
-        // ✅ Only hide loader *after* everything is ready
         requestAnimationFrame(() => hideLoader());
     }
 });
