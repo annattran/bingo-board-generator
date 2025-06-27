@@ -1,4 +1,6 @@
 // modules/listEditor.js
+import { updateLineNumbers } from './goalInput.js';
+import { showModal } from './modals.js';
 import { showLoader, hideLoader } from './loader.js';
 import { apiFetch } from './api.js';
 import { getCachedIdToken } from './auth.js';
@@ -6,9 +8,57 @@ import { getCachedIdToken } from './auth.js';
 export function bindListEditHandlers(heading, listContainer, editList, editListModal) {
     const deleteBtn = document.getElementById('deleteList');
     const renameBtn = document.getElementById('editListName');
+    const continueBtn = document.getElementById('continueList');
 
-    document.getElementById('editList').addEventListener('click', () => {
-        editListModal.style.display = 'flex';
+    document.getElementById('editList').addEventListener('click', async () => {
+        const listId = localStorage.getItem('listId');
+        const continueBtn = document.getElementById('continueList');
+
+        if (!listId) return;
+
+        showLoader();
+        try {
+            const token = await getCachedIdToken();
+            const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
+
+            // Only show Continue List button if the list is incomplete
+            if (items.length < 24) {
+                continueBtn.classList.remove('hidden');
+            } else {
+                continueBtn.classList.add('hidden');
+            }
+
+            editListModal.style.display = 'flex';
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error checking list', text: err.message });
+        } finally {
+            hideLoader();
+        }
+    });
+
+    continueBtn.addEventListener('click', async () => {
+        editListModal.style.display = 'none';
+        const listId = localStorage.getItem('listId');
+        if (!listId) return;
+
+        showLoader();
+        try {
+            const token = await getCachedIdToken();
+            const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
+
+            const input = document.getElementById('bingoGoalsInput');
+            input.value = items
+                .sort((a, b) => a.order - b.order)
+                .map(item => item.bingoItem || item.item)
+                .join('\n');
+
+            updateLineNumbers();
+            showModal('bingo-items-modal');
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error loading list', text: err.message });
+        } finally {
+            hideLoader();
+        }
     });
 
     renameBtn.addEventListener('click', async () => {
