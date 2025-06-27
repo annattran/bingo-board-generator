@@ -7,7 +7,7 @@ import {
     handleLogin, handleSignup, handleLogout, sendResetEmail
 } from './modules/auth.js';
 import { apiFetch } from './modules/api.js';
-import { renderBingoBoard, monitorBingoWin } from './modules/bingoBoard.js';
+import { renderBingoBoard } from './modules/bingoBoard.js';
 import { showModal, hideModal, bindCloseModalHandlers, hideOnOutsideClick } from './modules/modals.js';
 import { updateLineNumbers, bindLineNumberEvents } from './modules/goalInput.js';
 import { showLoader, hideLoader } from './modules/loader.js';
@@ -161,16 +161,6 @@ submitListForm?.addEventListener('submit', async (e) => {
         renderBingoBoard(sortedItems);
         toggleUI({ userSignedIn: true, hasList: true, hasAnyLists: true });
         hideModal('bingo-items-modal');
-
-        requestAnimationFrame(() => {
-            let hasBingo = false;
-            monitorBingoWin(() => {
-                if (!hasBingo) {
-                    hasBingo = true;
-                    Swal.fire('🎉 Bingo!', 'You completed 5 in a row!', 'success');
-                }
-            });
-        });
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
@@ -213,16 +203,6 @@ onAuthChange(async (user) => {
             const sortedItems = items.sort((a, b) => a.order - b.order);
             renderBingoBoard(sortedItems);
             toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
-
-            requestAnimationFrame(() => {
-                let hasBingo = false;
-                monitorBingoWin(() => {
-                    if (!hasBingo) {
-                        hasBingo = true;
-                        Swal.fire('🎉 Bingo!', 'You completed 5 in a row!', 'success');
-                    }
-                });
-            });
         }
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });

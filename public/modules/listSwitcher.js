@@ -65,16 +65,6 @@ export function bindDropdownHandler() {
                 const sortedItems = items.sort((a, b) => a.order - b.order);
                 renderBingoBoard(sortedItems);
                 toggleUI({ userSignedIn: true, hasList: true, hasAnyLists: true });
-
-                requestAnimationFrame(() => {
-                    let hasBingo = false;
-                    monitorBingoWin(() => {
-                        if (!hasBingo) {
-                            hasBingo = true;
-                            Swal.fire({ icon: 'success', title: '🎉 Bingo!', text: 'You completed 5 in a row!' });
-                        }
-                    });
-                });
             }
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Oops', text: err.message });

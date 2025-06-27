@@ -1,4 +1,3 @@
-// bingoBoard.js
 import { showModal, hideModal } from './modals.js';
 import { apiFetch } from './api.js';
 import { getCachedIdToken } from './auth.js';
@@ -19,6 +18,7 @@ export function renderBingoBoard(items) {
     };
 
     const listWithoutFree = items.filter(i => getLabel(i).toUpperCase() !== 'FREE SPACE');
+
     cells.forEach(cell => {
         cell.innerHTML = '';
         cell.removeAttribute('data-completed');
@@ -50,6 +50,12 @@ export function renderBingoBoard(items) {
 
     // Reset bingo flag on new render
     hasBingo = false;
+    monitorBingoWin(() => {
+        if (!hasBingo) {
+            hasBingo = true;
+            Swal.fire({ icon: 'success', title: '🎉 Bingo!', confirmButtonText: 'Nice!' });
+        }
+    });
 }
 
 // Edit handler
@@ -124,14 +130,6 @@ document.getElementById('save-edit')?.addEventListener('click', async () => {
         hideModal('edit-modal');
         Swal.fire({ icon: 'success', title: 'Saved!', timer: 1000, showConfirmButton: false });
 
-        // Trigger live win check after edit
-        monitorBingoWin(() => {
-            if (!hasBingo) {
-                hasBingo = true;
-                Swal.fire({ icon: 'success', title: '🎉 Bingo!', confirmButtonText: 'Nice!' });
-            }
-        });
-
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error saving goal', text: err.message });
     } finally {
@@ -158,10 +156,11 @@ export function monitorBingoWin(callback) {
         }
     });
 
-    observer.observe(document.getElementById('bingo-board'), {
-        attributes: true,
-        subtree: true,
-        attributeFilter: ['data-completed']
+    cells.forEach(cell => {
+        observer.observe(cell, {
+            attributes: true,
+            attributeFilter: ['data-completed']
+        });
     });
 
     // Initial check
