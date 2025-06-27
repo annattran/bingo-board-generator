@@ -9,7 +9,7 @@ import { toggleUI } from './ui.js';
 
 export async function populateBingoListsDropdown(selectListId = null) {
     const token = getCachedIdToken();
-    showLoader(); // <-- ADD THIS
+    showLoader();
     try {
         const { bingoLists } = await apiFetch('getBingoLists', 'GET', null, token);
         const listContainer = document.getElementById('bingoLists');
@@ -44,7 +44,7 @@ export async function populateBingoListsDropdown(selectListId = null) {
         Swal.fire({ icon: 'error', title: 'List Load Error', text: err.message });
         return [];
     } finally {
-        hideLoader(); // <-- ADD THIS
+        hideLoader();
     }
 }
 
@@ -96,10 +96,9 @@ export function bindDropdownHandler() {
 
     // BONUS: When user re-clicks same option, manually trigger
     dropdown.addEventListener('click', (e) => {
-        const selected = dropdown.value;
-        const hoveredOption = e.target?.value;
-        if (hoveredOption === selected) {
-            handleListChange(selected);  // Force refresh for same option
+        // ✅ Only respond if an actual <option> is clicked that matches the current value
+        if (e.target?.tagName === 'OPTION' && e.target.value === dropdown.value) {
+            handleListChange(dropdown.value);
         }
     });
 }
