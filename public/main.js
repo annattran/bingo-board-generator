@@ -101,7 +101,37 @@ logoutBtn?.addEventListener('click', async () => {
     showLoader();
     try {
         await handleLogout();
-        location.reload();
+
+        // Clear localStorage
+        localStorage.removeItem('listId');
+        localStorage.removeItem('bingoName');
+
+        // Clear forms
+        document.getElementById('emailLoginForm')?.reset();
+        document.getElementById('emailSignupForm')?.reset();
+        document.getElementById('bingo-name-form')?.reset();
+        document.getElementById('bingo-list-form')?.reset();
+
+        // Clear board
+        document.querySelectorAll('.bingo-cell').forEach(cell => {
+            cell.innerHTML = '';
+            cell.removeAttribute('data-completed');
+        });
+
+        // Reset dropdown
+        const dropdown = document.getElementById('bingoLists');
+        if (dropdown) dropdown.innerHTML = '';
+
+        // Hide modals and show login
+        hideModal('bingo-name-modal');
+        hideModal('bingo-items-modal');
+        hideModal('edit-modal');
+        hideModal('edit-list-modal');
+
+        // Show login view
+        toggleAuthView(true);
+        toggleUI({ userSignedIn: false, hasList: false, hasAnyLists: false });
+
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Logout Failed', text: err.message });
     } finally {
