@@ -6,9 +6,14 @@ import { getCachedIdToken } from './auth.js';
 const loader = document.getElementById('loaderOverlay');
 
 let bingoObserverInitialized = false;
+let previousBingoCount = 0;
 
 export function renderBingoBoard(items) {
     loader.classList.remove('hidden');
+
+    // 🔄 Reset bingo state for new board
+    bingoObserverInitialized = false;
+    previousBingoCount = 0;
 
     try {
         const cells = document.querySelectorAll('.bingo-cell');
@@ -72,15 +77,7 @@ export function renderBingoBoard(items) {
             }
         });
 
-        // Enable bingo detection
-        monitorBingoWin(() => {
-            Swal.fire({
-                icon: 'success',
-                title: '🎉 Bingo!',
-                text: 'You completed 5 in a row!',
-                confirmButtonText: 'Nice!'
-            });
-        });
+        monitorBingoWin(); // 🎯 Activate win detection
 
     } finally {
         loader.classList.add('hidden');
@@ -164,7 +161,7 @@ document.getElementById('save-edit')?.addEventListener('click', async () => {
 });
 
 // --- Bingo Detection ---
-export function monitorBingoWin(callback) {
+export function monitorBingoWin() {
     const board = document.getElementById('bingo-board');
     if (!board || bingoObserverInitialized) return;
 
@@ -178,10 +175,32 @@ export function monitorBingoWin(callback) {
     const diags = [[0, 6, 12, 18, 24], [4, 8, 12, 16, 20]];
     const lines = [...rows, ...cols, ...diags];
 
-    const checkWin = () => lines.some(line => line.every(i => isCompleted(cells[i])));
+    const countBingos = () =>
+        lines.filter(line => line.every(i => isCompleted(cells[i]))).length;
+
+    const showBingoAlert = (count) => {
+        const text = count === 1
+            ? 'You completed 5 in a row!'
+            : `You have ${count} Bingos!`;
+
+        if (Swal.isVisible()) {
+            Swal.update({ text, title: '🎉 Bingo!' });
+        } else {
+            Swal.fire({
+                icon: 'success',
+                title: '🎉 Bingo!',
+                text,
+                confirmButtonText: 'Nice!'
+            });
+        }
+    };
 
     const observer = new MutationObserver(() => {
-        if (checkWin()) callback();
+        const count = countBingos();
+        if (count !== previousBingoCount) {
+            previousBingoCount = count;
+            if (count > 0) showBingoAlert(count);
+        }
     });
 
     observer.observe(board, {
@@ -190,5 +209,8 @@ export function monitorBingoWin(callback) {
         attributeFilter: ['data-completed']
     });
 
-    if (checkWin()) callback();
+    // Initial check
+    const initialCount = countBingos();
+    previousBingoCount = initialCount;
+    if (initialCount > 0) showBingoAlert(initialCount);
 }
