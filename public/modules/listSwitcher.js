@@ -52,12 +52,24 @@ export function bindDropdownHandler() {
         showLoader();
         try {
             localStorage.setItem('listId', listId);
+
             const token = getCachedIdToken();
             const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
+            const input = document.getElementById('bingoGoalsInput');
 
             if (items.length < 24) {
-                const input = document.getElementById('bingoGoalsInput');
-                input.value = items.sort((a, b) => a.order - b.order).map(item => item.bingoItem || item.item).join('\n');
+                // 🧹 Clear the board visually
+                document.querySelectorAll('.bingo-cell').forEach(cell => {
+                    cell.innerHTML = '';
+                    cell.removeAttribute('data-completed');
+                });
+
+                // 📝 Populate textarea with existing goals
+                input.value = items
+                    .sort((a, b) => a.order - b.order)
+                    .map(item => item.bingoItem || item.item)
+                    .join('\n');
+
                 updateLineNumbers();
                 toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: true });
                 showModal('bingo-items-modal');

@@ -22,6 +22,13 @@ export function renderBingoBoard(items) {
             text: 'You need 24 goals to generate a board. Your progress is saved, so you can come back anytime to finish it.',
             confirmButtonText: 'Got it'
         });
+
+        // Clear any visible board if an incomplete one slips through
+        document.querySelectorAll('.bingo-cell').forEach(cell => {
+            cell.innerHTML = '';
+            cell.removeAttribute('data-completed');
+        });
+
         return;
     }
 
