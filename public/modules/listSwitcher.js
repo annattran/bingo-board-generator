@@ -1,13 +1,13 @@
 // listSwitcher.js
 import { apiFetch } from './api.js';
 import { getCachedIdToken } from './auth.js';
-import { renderBingoBoard, monitorBingoWin } from './bingoBoard.js';
+import { renderBingoBoard } from './bingoBoard.js';
 import { showModal } from './modals.js';
 import { updateLineNumbers } from './goalInput.js';
 import { showLoader, hideLoader } from './loader.js';
 import { toggleUI } from './ui.js';
 
-let currentListId = null; // 🔒 track currently loaded list
+let currentListId = null;
 let changeTimeout = null;
 
 export async function populateBingoListsDropdown(selectListId = null) {
@@ -40,6 +40,7 @@ export async function populateBingoListsDropdown(selectListId = null) {
             localStorage.setItem('listId', selectedList.id);
             localStorage.setItem('bingoName', selectedList.bingoName);
             listContainer.value = selectedList.id;
+            document.querySelector('h1').textContent = selectedList.bingoName || 'Bingo Board';
         }
 
         return bingoLists;
@@ -68,6 +69,10 @@ export function bindDropdownHandler() {
             const token = getCachedIdToken();
             const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
             const input = document.getElementById('bingoGoalsInput');
+            const selectedOption = dropdown.querySelector(`option[value="${listId}"]`);
+            const name = selectedOption?.dataset.name || 'Bingo Board';
+            document.querySelector('h1').textContent = name;
+            localStorage.setItem('bingoName', name);
 
             // ✅ Always unhide edit list button when list loads
             editListBtn?.classList.remove('hidden');

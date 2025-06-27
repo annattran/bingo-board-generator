@@ -178,6 +178,7 @@ onAuthChange(async (user) => {
         toggleUI({ userSignedIn: false, hasList: false, hasAnyLists: false });
 
         editListBtn.classList.add('hidden'); // ⛔ Hide on logout
+        document.querySelector('h1').textContent = 'Bingo Board Generator'; // Reset title
         hideLoader();
         return;
     }
@@ -188,6 +189,11 @@ onAuthChange(async (user) => {
 
         const hasAnyLists = bingoLists.length > 0;
         const listId = localStorage.getItem('listId');
+        const bingoName = localStorage.getItem('bingoName');
+
+        if (bingoName) {
+            document.querySelector('h1').textContent = bingoName;
+        }
 
         if (!hasAnyLists || !listId) {
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
