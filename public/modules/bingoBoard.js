@@ -3,13 +3,12 @@ import { showModal, hideModal } from './modals.js';
 import { apiFetch } from './api.js';
 import { getCachedIdToken } from './auth.js';
 
-let bingoObserved = false;
-let hasBingo = false;
-
 const loader = document.getElementById('loaderOverlay');
 
+let bingoObserverInitialized = false;
+
 export function renderBingoBoard(items) {
-    loader.classList.remove('hidden'); // <-- Show before rendering
+    loader.classList.remove('hidden');
 
     try {
         const cells = document.querySelectorAll('.bingo-cell');
@@ -26,7 +25,7 @@ export function renderBingoBoard(items) {
                 confirmButtonText: 'Got it'
             });
 
-            document.querySelectorAll('.bingo-cell').forEach(cell => {
+            cells.forEach(cell => {
                 cell.innerHTML = '';
                 cell.removeAttribute('data-completed');
             });
@@ -41,12 +40,13 @@ export function renderBingoBoard(items) {
             notes: ''
         };
 
-        hasBingo = false;
+        // Clear board
         cells.forEach(cell => {
             cell.innerHTML = '';
             cell.removeAttribute('data-completed');
         });
 
+        // Render FREE SPACE
         const freeDiv = document.createElement('div');
         freeDiv.className = 'edit-item';
         freeDiv.dataset.id = freeItem.id;
@@ -56,6 +56,7 @@ export function renderBingoBoard(items) {
         cells[freeSpaceIndex].appendChild(freeDiv);
         cells[freeSpaceIndex].dataset.completed = freeItem.completed;
 
+        // Render all other goals
         listWithoutFree.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'edit-item';
@@ -71,23 +72,22 @@ export function renderBingoBoard(items) {
             }
         });
 
+        // Enable bingo detection
         monitorBingoWin(() => {
-            if (!hasBingo) {
-                hasBingo = true;
-                Swal.fire({
-                    icon: 'success',
-                    title: '🎉 Bingo!',
-                    text: 'You completed 5 in a row!',
-                    confirmButtonText: 'Nice!'
-                });
-            }
+            Swal.fire({
+                icon: 'success',
+                title: '🎉 Bingo!',
+                text: 'You completed 5 in a row!',
+                confirmButtonText: 'Nice!'
+            });
         });
+
     } finally {
-        loader.classList.add('hidden'); // <-- Always hide loader after render
+        loader.classList.add('hidden');
     }
 }
 
-// --- Edit modal ---
+// --- Edit Modal ---
 document.getElementById('bingo-board')?.addEventListener('click', (e) => {
     const item = e.target.closest('.edit-item');
     if (!item) return;
@@ -114,7 +114,7 @@ document.getElementById('bingo-board')?.addEventListener('click', (e) => {
     showModal('edit-modal');
 });
 
-// --- Save handler ---
+// --- Save Handler ---
 document.getElementById('save-edit')?.addEventListener('click', async () => {
     const token = getCachedIdToken();
     const listId = localStorage.getItem('listId');
@@ -163,31 +163,32 @@ document.getElementById('save-edit')?.addEventListener('click', async () => {
     }
 });
 
-// --- Bingo detection ---
+// --- Bingo Detection ---
 export function monitorBingoWin(callback) {
-    if (bingoObserved) return;
-    bingoObserved = true;
+    const board = document.getElementById('bingo-board');
+    if (!board || bingoObserverInitialized) return;
 
-    const cells = document.querySelectorAll('.bingo-cell');
+    bingoObserverInitialized = true;
+
     const isCompleted = el => el?.dataset.completed === 'true';
+    const cells = board.querySelectorAll('.bingo-cell');
 
     const rows = [...Array(5)].map((_, r) => [...Array(5)].map((_, c) => 5 * r + c));
     const cols = [...Array(5)].map((_, c) => [...Array(5)].map((_, r) => 5 * r + c));
     const diags = [[0, 6, 12, 18, 24], [4, 8, 12, 16, 20]];
-    const allLines = [...rows, ...cols, ...diags];
+    const lines = [...rows, ...cols, ...diags];
 
-    const checkWin = () =>
-        allLines.some(line => line.every(i => isCompleted(cells[i])));
+    const checkWin = () => lines.some(line => line.every(i => isCompleted(cells[i])));
 
     const observer = new MutationObserver(() => {
-        if (!hasBingo && checkWin()) callback();
+        if (checkWin()) callback();
     });
 
-    observer.observe(document.getElementById('bingo-board'), {
+    observer.observe(board, {
         attributes: true,
         subtree: true,
         attributeFilter: ['data-completed']
     });
 
-    if (!hasBingo && checkWin()) callback();
+    if (checkWin()) callback();
 }
