@@ -13,7 +13,18 @@ export function renderBingoBoard(items) {
     const freeSpaceIndex = 12;
     const getLabel = item => item.item || item.bingoItem || '';
 
-    // Setup FREE SPACE
+    const listWithoutFree = items.filter(i => getLabel(i).toUpperCase() !== 'FREE SPACE');
+
+    if (listWithoutFree.length < 24) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Board not generated yet',
+            text: 'You need 24 goals to generate a board. Your progress is saved, so you can come back anytime to finish it.',
+            confirmButtonText: 'Got it'
+        });
+        return;
+    }
+
     const freeItem = items.find(i => getLabel(i).toUpperCase() === 'FREE SPACE') || {
         id: 'free-space',
         item: 'FREE SPACE',
@@ -21,16 +32,13 @@ export function renderBingoBoard(items) {
         notes: ''
     };
 
-    const rest = items.filter(i => getLabel(i).toUpperCase() !== 'FREE SPACE');
-
-    // Clear cells and reset flags
     hasBingo = false;
     cells.forEach(cell => {
         cell.innerHTML = '';
         cell.removeAttribute('data-completed');
     });
 
-    // Place free space
+    // FREE SPACE
     const freeDiv = document.createElement('div');
     freeDiv.className = 'edit-item';
     freeDiv.dataset.id = freeItem.id;
@@ -40,8 +48,8 @@ export function renderBingoBoard(items) {
     cells[freeSpaceIndex].appendChild(freeDiv);
     cells[freeSpaceIndex].dataset.completed = freeItem.completed;
 
-    // Place all other items
-    rest.forEach((item, i) => {
+    // Regular goals
+    listWithoutFree.forEach((item, i) => {
         const div = document.createElement('div');
         div.className = 'edit-item';
         div.dataset.id = item.id;
@@ -56,7 +64,6 @@ export function renderBingoBoard(items) {
         }
     });
 
-    // Start win detection
     monitorBingoWin(() => {
         if (!hasBingo) {
             hasBingo = true;
@@ -70,7 +77,7 @@ export function renderBingoBoard(items) {
     });
 }
 
-// Edit modal handler
+// --- Edit modal ---
 document.getElementById('bingo-board')?.addEventListener('click', (e) => {
     const item = e.target.closest('.edit-item');
     if (!item) return;
@@ -97,7 +104,7 @@ document.getElementById('bingo-board')?.addEventListener('click', (e) => {
     showModal('edit-modal');
 });
 
-// Save edit handler
+// --- Save handler ---
 document.getElementById('save-edit')?.addEventListener('click', async () => {
     const token = getCachedIdToken();
     const listId = localStorage.getItem('listId');
@@ -146,9 +153,9 @@ document.getElementById('save-edit')?.addEventListener('click', async () => {
     }
 });
 
-// Bingo win detection
+// --- Bingo detection ---
 export function monitorBingoWin(callback) {
-    if (bingoObserved) return; // ensure only one observer per session
+    if (bingoObserved) return;
     bingoObserved = true;
 
     const cells = document.querySelectorAll('.bingo-cell');
@@ -172,6 +179,5 @@ export function monitorBingoWin(callback) {
         attributeFilter: ['data-completed']
     });
 
-    // Initial check
     if (!hasBingo && checkWin()) callback();
 }
