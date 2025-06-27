@@ -11,6 +11,15 @@ if (admin.apps.length === 0) {
 
 const db = admin.firestore();
 
+// Fisher-Yates shuffle
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return {
@@ -40,34 +49,43 @@ exports.handler = async (event) => {
             return { statusCode: 404, body: JSON.stringify({ error: 'Bingo list not found' }) };
         }
 
-        // 🔄 Build updated bingoItems array
-        const bingoItems = goals.map((goal, index) => ({
-            id: `goal-${index}`,
+        let bingoItems = goals.map(goal => ({
             bingoItem: goal,
             completed: false
         }));
 
-        if (goals.length === 24) {
+        // Shuffle goals if full board
+        if (bingoItems.length === 24) {
+            bingoItems = shuffle(bingoItems);
+
+            // Insert FREE SPACE at center (index 12)
             bingoItems.splice(12, 0, {
                 id: 'free-space',
                 bingoItem: 'FREE SPACE',
-                completed: false // let users mark it completed
+                completed: false
             });
         }
 
-        // Assign unique order values
+        // Assign id and order
         bingoItems.forEach((item, index) => {
+            item.id = item.id || `goal-${index}`;
             item.order = index;
         });
 
         await bingoListRef.update({
             bingoItems,
             isComplete: bingoItems.length === 25
-        });        
+        });
 
-        return { statusCode: 200, body: JSON.stringify({ message: 'Goals saved successfully' }) };
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Goals saved successfully' })
+        };
     } catch (error) {
         console.error('Error saving goals:', error);
-        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: error.message })
+        };
     }
 };
