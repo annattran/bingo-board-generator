@@ -177,17 +177,24 @@ submitListForm?.addEventListener('submit', async (e) => {
 
 // --- Auth Change Handler ---
 onAuthChange(async (user) => {
-    toggleUI({ userSignedIn: !!user, hasList: false, hasAnyLists: false });
-    if (!user) return;
+    const isSignedIn = !!user;
 
-    // Reset stale localStorage
-    localStorage.removeItem('listId');
-    localStorage.removeItem('bingoName');
+    if (!isSignedIn) {
+        toggleUI({ userSignedIn: false, hasList: false, hasAnyLists: false });
+        return;
+    }
 
+    // Don't show anything yet — wait for data
     showLoader();
     try {
+        // Reset stale localStorage
+        localStorage.removeItem('listId');
+        localStorage.removeItem('bingoName');
+
         const bingoLists = await populateBingoListsDropdown();
         const hasAnyLists = bingoLists.length > 0;
+
+        bindDropdownHandler();
 
         if (!hasAnyLists) {
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
@@ -198,12 +205,13 @@ onAuthChange(async (user) => {
         const token = getCachedIdToken();
         const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
 
-        bindDropdownHandler();
-
         if (items.length < 24) {
-            const input = document.getElementById('bingoGoalsInput');
-            input.value = items.sort((a, b) => a.order - b.order).map(item => item.bingoItem || item.item).join('\n');
+            document.getElementById('bingoGoalsInput').value = items
+                .sort((a, b) => a.order - b.order)
+                .map(item => item.bingoItem || item.item)
+                .join('\n');
             updateLineNumbers();
+
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
             showModal('bingo-items-modal');
         } else {
