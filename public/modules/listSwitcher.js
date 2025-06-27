@@ -52,8 +52,7 @@ export function bindDropdownHandler() {
     const dropdown = document.getElementById('bingoLists');
     if (!dropdown) return;
 
-    dropdown.addEventListener('change', async (e) => {
-        const listId = e.target.value;
+    const handleListChange = async (listId) => {
         if (!listId) return;
 
         showLoader();
@@ -89,6 +88,18 @@ export function bindDropdownHandler() {
             Swal.fire({ icon: 'error', title: 'Oops', text: err.message });
         } finally {
             hideLoader();
+        }
+    };
+
+    // When selection changes
+    dropdown.addEventListener('change', (e) => handleListChange(e.target.value));
+
+    // BONUS: When user re-clicks same option, manually trigger
+    dropdown.addEventListener('click', (e) => {
+        const selected = dropdown.value;
+        const hoveredOption = e.target?.value;
+        if (hoveredOption === selected) {
+            handleListChange(selected);  // Force refresh for same option
         }
     });
 }
