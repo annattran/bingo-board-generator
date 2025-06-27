@@ -184,6 +184,11 @@ onAuthChange(async (user) => {
 
     showLoader();
     try {
+        // 🧹 Step 1: Clear any stale listId/bingoName from localStorage
+        localStorage.removeItem('listId');
+        localStorage.removeItem('bingoName');
+
+        // Step 2: Fetch user's bingo lists
         const bingoLists = await populateBingoListsDropdown();
 
         if (!bingoLists.length) {
@@ -191,7 +196,11 @@ onAuthChange(async (user) => {
             return;
         }
 
-        const listId = localStorage.getItem('listId');
+        // ✅ Step 3: Set the first list as active
+        const { id: listId, bingoName } = bingoLists[0];
+        localStorage.setItem('listId', listId);
+        localStorage.setItem('bingoName', bingoName);
+
         const token = getCachedIdToken();
         const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
 
@@ -210,7 +219,11 @@ onAuthChange(async (user) => {
                 monitorBingoWin(() => {
                     if (!hasBingo) {
                         hasBingo = true;
-                        alert('🎉 Bingo!');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '🎉 Bingo!',
+                            text: 'You completed 5 in a row!',
+                        });
                     }
                 });
             });
@@ -218,7 +231,7 @@ onAuthChange(async (user) => {
 
         bindDropdownHandler();
     } catch (err) {
-        alert(err.message);
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
         hideLoader();
     }
