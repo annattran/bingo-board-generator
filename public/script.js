@@ -374,6 +374,7 @@ async function loadItemsForList() {
             div.classList.add('edit-item');
             div.setAttribute('data-id', item.id);
             div.setAttribute('data-completed', item.completed);
+            div.setAttribute('data-notes', item.notes || '');  // ✅ Store notes
             div.textContent = item.bingoItem || item.item;
 
             // Handle FREE SPACE at center
@@ -484,8 +485,7 @@ const editTextarea = document.getElementById('edit-goal-text');
 const editLabel = document.getElementById('edit-label');
 const saveEditButton = document.getElementById('save-edit');
 const editListModal = document.getElementById('edit-list-modal');
-const confirmButton = document.getElementById('mark-completed');
-const cancelButton = document.getElementById('mark-incomplete');
+const editNotesTextarea = document.getElementById('edit-goal-notes');
 
 // Variable to store the item ID and reference
 let selectedItemId = null;
@@ -507,6 +507,7 @@ bingoBoard.addEventListener('click', function (event) {
         // Pre-fill textarea
         if (!isFreeSpace) {
             editTextarea.value = itemElement.textContent.trim();
+            editNotesTextarea.value = itemElement.getAttribute('data-notes') || '';
         }
 
         // ✅ Pre-fill completion toggle
@@ -527,6 +528,7 @@ document.getElementById('save-edit').addEventListener('click', async () => {
     const user = auth.currentUser;
     const listId = localStorage.getItem('listId');
     const updatedText = document.getElementById('edit-goal-text').value.trim();
+    const updatedNotes = editNotesTextarea.value.trim();
     const completed = document.getElementById('completion-status').checked;
 
     if (!selectedItemId || !user || !listId || !updatedText) return;
@@ -543,7 +545,8 @@ document.getElementById('save-edit').addEventListener('click', async () => {
                 listId,
                 itemId: selectedItemId,
                 bingoItem: updatedText,
-                completed // 👈 Include this!
+                notes: updatedNotes,
+                completed
             })
         });
 
@@ -551,6 +554,7 @@ document.getElementById('save-edit').addEventListener('click', async () => {
             const cell = document.querySelector(`div[data-id="${selectedItemId}"]`);
             cell.textContent = updatedText;
             cell.setAttribute('data-completed', completed);
+            cell.setAttribute('data-notes', updatedNotes);
 
             Swal.fire({
                 toast: true,

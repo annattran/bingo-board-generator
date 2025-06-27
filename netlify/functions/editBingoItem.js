@@ -37,13 +37,14 @@ exports.handler = async (event) => {
         };
     }
 
-    let completed, bingoItem, itemId, listId;
+    let completed, bingoItem, itemId, listId, notes;
     try {
         const body = JSON.parse(event.body);
         completed = body.completed;
         bingoItem = body.bingoItem;
         itemId = body.itemId;
         listId = body.listId;
+        notes = body.notes;
 
         if (!itemId || !listId) {
             return {
@@ -80,8 +81,10 @@ exports.handler = async (event) => {
             };
         }
 
+        // ✅ Apply updates if provided
         if (completed !== undefined) bingoItems[itemIndex].completed = completed;
         if (bingoItem !== undefined) bingoItems[itemIndex].bingoItem = bingoItem;
+        if (notes !== undefined) bingoItems[itemIndex].notes = notes;
 
         await bingoListRef.update({ bingoItems });
 
