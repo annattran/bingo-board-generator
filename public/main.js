@@ -189,15 +189,12 @@ onAuthChange(async (user) => {
 
         const hasAnyLists = bingoLists.length > 0;
         const listId = localStorage.getItem('listId');
-        const bingoName = localStorage.getItem('bingoName');
-
-        if (bingoName) {
-            document.querySelector('h1').textContent = bingoName;
-        }
 
         if (!hasAnyLists || !listId) {
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
-            editListBtn.classList.add('hidden'); // ⛔ Hide if no list selected
+            editListBtn.classList.add('hidden');
+            const bingoName = localStorage.getItem('bingoName');
+            if (bingoName) document.querySelector('h1').textContent = bingoName;
             return;
         }
 
@@ -209,12 +206,16 @@ onAuthChange(async (user) => {
             document.getElementById('bingoGoalsInput').value = sortedItems.map(i => i.bingoItem || i.item).join('\n');
             updateLineNumbers();
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
+            const bingoName = localStorage.getItem('bingoName');
+            if (bingoName) document.querySelector('h1').textContent = bingoName;
 
             editListBtn.classList.remove('hidden'); // ✅ Show even if incomplete
             showModal('bingo-items-modal');
         } else {
             renderBingoBoard(sortedItems);
             toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
+            const bingoName = localStorage.getItem('bingoName');
+            if (bingoName) document.querySelector('h1').textContent = bingoName;
 
             editListBtn.classList.remove('hidden'); // ✅ Show if full board
         }
