@@ -13,6 +13,7 @@ import { updateLineNumbers, bindLineNumberEvents } from './modules/goalInput.js'
 import { showLoader, hideLoader } from './modules/loader.js';
 import { populateBingoListsDropdown, bindDropdownHandler } from './modules/listSwitcher.js';
 import { toggleUI } from './modules/ui.js';
+import { bindListEditHandlers } from './modules/listEditor.js';
 
 // --- Firebase Init ---
 const firebaseConfig = {
@@ -161,6 +162,7 @@ submitListForm?.addEventListener('submit', async (e) => {
 // --- Auth Change Watcher ---
 onAuthChange(async (user) => {
     const signedIn = !!user;
+    const editListBtn = document.getElementById('editList');
     showLoader();
 
     if (!signedIn) {
@@ -174,6 +176,8 @@ onAuthChange(async (user) => {
         ['bingo-name-modal', 'bingo-items-modal', 'edit-modal', 'edit-list-modal'].forEach(hideModal);
         toggleAuthView(true);
         toggleUI({ userSignedIn: false, hasList: false, hasAnyLists: false });
+
+        editListBtn.classList.add('hidden'); // ⛔ Hide on logout
         hideLoader();
         return;
     }
@@ -187,6 +191,7 @@ onAuthChange(async (user) => {
 
         if (!hasAnyLists || !listId) {
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
+            editListBtn.classList.add('hidden'); // ⛔ Hide if no list selected
             return;
         }
 
@@ -198,10 +203,14 @@ onAuthChange(async (user) => {
             document.getElementById('bingoGoalsInput').value = sortedItems.map(i => i.bingoItem || i.item).join('\n');
             updateLineNumbers();
             toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
+
+            editListBtn.classList.remove('hidden'); // ✅ Show even if incomplete
             showModal('bingo-items-modal');
         } else {
             renderBingoBoard(sortedItems);
             toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
+
+            editListBtn.classList.remove('hidden'); // ✅ Show if full board
         }
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error loading board', text: err.message });
@@ -209,6 +218,13 @@ onAuthChange(async (user) => {
         requestAnimationFrame(() => hideLoader());
     }
 });
+
+bindListEditHandlers(
+    document.querySelector('h1'),
+    document.getElementById('bingoLists'),
+    document.getElementById('editList'),
+    document.getElementById('edit-list-modal')
+);
 
 // --- Modal Behavior ---
 bindCloseModalHandlers();

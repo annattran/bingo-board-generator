@@ -62,10 +62,15 @@ export function bindDropdownHandler() {
         localStorage.setItem('listId', listId);
         showLoader();
 
+        const editListBtn = document.getElementById('editList');
+
         try {
             const token = getCachedIdToken();
             const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
             const input = document.getElementById('bingoGoalsInput');
+
+            // ✅ Always unhide edit list button when list loads
+            editListBtn?.classList.remove('hidden');
 
             if (items.length < 24) {
                 // 🧹 Clear the board visually

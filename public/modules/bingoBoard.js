@@ -38,6 +38,9 @@ export function renderBingoBoard(items) {
             return;
         }
 
+        // ✅ Unhide edit list button
+        document.getElementById('editList')?.classList.remove('hidden');
+
         const freeItem = items.find(i => getLabel(i).toUpperCase() === 'FREE SPACE') || {
             id: 'free-space',
             item: 'FREE SPACE',
