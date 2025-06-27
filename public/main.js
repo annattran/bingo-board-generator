@@ -126,9 +126,15 @@ submitNameForm?.addEventListener('submit', async (e) => {
     try {
         const name = submitNameForm.bingoName.value;
         const token = getCachedIdToken();
+
+        // Create list
         const { id } = await apiFetch('createBingoList', 'POST', { bingoName: name }, token);
         localStorage.setItem('listId', id);
         localStorage.setItem('bingoName', name);
+
+        // ✅ Update dropdown and set new value
+        await populateBingoListsDropdown(id);
+
         hideModal('bingo-name-modal');
         showModal('bingo-items-modal');
     } catch (err) {
