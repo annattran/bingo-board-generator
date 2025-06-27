@@ -68,6 +68,10 @@ document.querySelectorAll('#togglePassword, #toggleSignupPassword').forEach(butt
 loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     showLoader();
+
+    // Force the loader to visually display before proceeding
+    await new Promise(requestAnimationFrame);
+
     try {
         const { value: email } = loginForm.email;
         const { value: password } = loginForm.password;
