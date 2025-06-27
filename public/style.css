@@ -327,6 +327,7 @@ input:disabled {
     font-family: inherit;
     font-size: inherit;
     padding: 10px;
+    resize: vertical;
 }
 
 .modal .bingo-form .flex {
