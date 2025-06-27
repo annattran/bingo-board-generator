@@ -149,13 +149,18 @@
         <div class="modal-content">
             <span class="close-modal close">&times;</span>
             <div class="edit-container">
-                <label id="edit-label" for="edit-goal-text">Edit Goal:</label>
-                <textarea id="edit-goal-text"></textarea>
-                <div class="button-container">
-                    <button id="save-edit">Save</button>
-                    <button id="mark-completed">Mark as Completed</button>
-                    <button id="mark-incomplete">Mark as Incomplete</button>
+                <div class="input">
+                    <label id="edit-label" for="edit-goal-text">Goal:</label>
+                    <textarea id="edit-goal-text"></textarea>
                 </div>
+                <div class="input">
+                    <label for="completion-status">Completion Status:</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="completion-status">
+                        <span></span>
+                    </label>
+                </div>
+                <button id="save-edit">Save</button>
             </div>
         </div>
     </div>

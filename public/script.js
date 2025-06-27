@@ -504,11 +504,16 @@ bingoBoard.addEventListener('click', function (event) {
         editLabel.style.display = isFreeSpace ? 'none' : 'block';
         saveEditButton.style.display = isFreeSpace ? 'none' : 'inline-block';
 
-        // If not free-space, populate text
+        // Pre-fill textarea
         if (!isFreeSpace) {
             editTextarea.value = itemElement.textContent.trim();
         }
 
+        // ✅ Pre-fill completion toggle
+        const completedStatus = itemElement.getAttribute('data-completed') === 'true';
+        document.getElementById('completion-status').checked = completedStatus;
+
+        // Show modal
         editModal.style.display = 'flex';
     }
 });
@@ -518,46 +523,11 @@ editList.addEventListener('click', function (event) {
     editListModal.style.display = 'flex';
 });
 
-// Function to mark an item as completed or incomplete
-async function updateItemCompletion(completedStatus) {
-    if (!selectedItemId) return;
-    const user = auth.currentUser;
-    const listId = localStorage.getItem('listId');
-
-    if (!user || !listId) return;
-
-    showLoader();  // before starting
-    try {
-        const res = await fetch(`/.netlify/functions/editBingoItem`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${await user.getIdToken()}`
-            },
-            body: JSON.stringify({ completed: completedStatus, listId, itemId: selectedItemId })
-        });
-
-        if (res.ok) {
-            const action = completedStatus ? 'completed' : 'incomplete';
-            document.querySelector(`div[data-id="${selectedItemId}"]`).setAttribute('data-completed', completedStatus);
-            Swal.fire({ toast: true, icon: 'success', title: 'Item updated!', text: `Item marked as ${action}` });
-        } else {
-            Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Error updating item` });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Failed to update item` });
-    } finally {
-        hideLoader();  // always hide at the end
-    }
-    editModal.style.display = 'none';
-    monitorBingoWin();
-}
-
 document.getElementById('save-edit').addEventListener('click', async () => {
     const user = auth.currentUser;
     const listId = localStorage.getItem('listId');
     const updatedText = document.getElementById('edit-goal-text').value.trim();
+    const completed = document.getElementById('completion-status').checked;
 
     if (!selectedItemId || !user || !listId || !updatedText) return;
 
@@ -569,32 +539,46 @@ document.getElementById('save-edit').addEventListener('click', async () => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${await user.getIdToken()}`
             },
-            body: JSON.stringify({ listId, itemId: selectedItemId, bingoItem: updatedText })
+            body: JSON.stringify({
+                listId,
+                itemId: selectedItemId,
+                bingoItem: updatedText,
+                completed // 👈 Include this!
+            })
         });
 
         if (res.ok) {
-            document.querySelector(`div[data-id="${selectedItemId}"]`).textContent = updatedText;
-            Swal.fire({ toast: true, icon: 'success', title: 'Goal updated!' });
+            const cell = document.querySelector(`div[data-id="${selectedItemId}"]`);
+            cell.textContent = updatedText;
+            cell.setAttribute('data-completed', completed);
+
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                title: 'Item updated!',
+                text: `Marked as ${completed ? 'completed' : 'incomplete'}`
+            });
         } else {
-            Swal.fire({ toast: true, icon: 'error', title: 'Oops...', text: `Failed to update goal` });
+            Swal.fire({
+                toast: true,
+                icon: 'error',
+                title: 'Oops...',
+                text: `Failed to update goal`
+            });
         }
     } catch (err) {
         console.error(err);
-        Swal.fire({ toast: true, icon: 'error', title: 'Error', text: err.message });
+        Swal.fire({
+            toast: true,
+            icon: 'error',
+            title: 'Error',
+            text: err.message
+        });
     } finally {
         hideLoader();
         editModal.style.display = 'none';
+        monitorBingoWin();
     }
-});
-
-// Event listener for confirming completion
-confirmButton.addEventListener('click', function () {
-    updateItemCompletion(true); // Mark the item as completed
-});
-
-// Event listener for canceling the action (marking as incomplete)
-cancelButton.addEventListener('click', function () {
-    updateItemCompletion(false); // Mark the item as incomplete
 });
 
 async function loadUserLists(idToken) {
