@@ -214,8 +214,9 @@ onAuthChange(async (user) => {
         return;
     }
 
-    // Don't show anything yet — wait for data
+    // Start loading — don't hide until UI is fully ready
     showLoader();
+
     try {
         // Reset stale localStorage
         localStorage.removeItem('listId');
@@ -249,10 +250,12 @@ onAuthChange(async (user) => {
             renderBingoBoard(sortedItems);
             toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
         }
+
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
-        hideLoader();
+        // ✅ Only hide loader *after* everything is ready
+        requestAnimationFrame(() => hideLoader());
     }
 });
 
