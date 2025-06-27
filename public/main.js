@@ -26,7 +26,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 initAuth(app);
 
-// --- UI Toggle ---
+// --- UI Elements ---
 const loginForm = document.getElementById('emailLoginForm');
 const signupForm = document.getElementById('emailSignupForm');
 const logoutBtn = document.getElementById('logoutButton');
@@ -35,7 +35,7 @@ const createBtn = document.getElementById('create');
 const submitNameForm = document.getElementById('bingo-name-form');
 const submitListForm = document.getElementById('bingo-list-form');
 
-// --- Auth Form Toggle ---
+// --- Toggle Auth Views ---
 const toggleLoginViewBtns = document.querySelectorAll('#toggleLoginView');
 const toggleSignupViewBtns = document.querySelectorAll('#toggleSignupView');
 const loginContainer = document.getElementById('emailLoginContainer');
@@ -73,7 +73,7 @@ loginForm?.addEventListener('submit', async (e) => {
         const { value: password } = loginForm.password;
         await handleLogin(email, password);
     } catch (err) {
-        alert(err.message);
+        Swal.fire({ icon: 'error', title: 'Login Failed', text: err.message });
     } finally {
         hideLoader();
     }
@@ -87,7 +87,7 @@ signupForm?.addEventListener('submit', async (e) => {
         const password = signupForm.signupPassword.value;
         await handleSignup(email, password);
     } catch (err) {
-        alert(err.message);
+        Swal.fire({ icon: 'error', title: 'Signup Failed', text: err.message });
     } finally {
         hideLoader();
     }
@@ -99,7 +99,7 @@ logoutBtn?.addEventListener('click', async () => {
         await handleLogout();
         location.reload();
     } catch (err) {
-        alert(err.message);
+        Swal.fire({ icon: 'error', title: 'Logout Failed', text: err.message });
     } finally {
         hideLoader();
     }
@@ -110,14 +110,14 @@ forgotPasswordLink?.addEventListener('click', async () => {
     if (email) {
         try {
             await sendResetEmail(email);
-            alert('Reset email sent.');
+            Swal.fire('Reset email sent.', '', 'success');
         } catch (err) {
-            alert(err.message);
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
         }
     }
 });
 
-// --- Create Board ---
+// --- Create New Board ---
 createBtn?.addEventListener('click', () => showModal('bingo-name-modal'));
 
 submitNameForm?.addEventListener('submit', async (e) => {
@@ -129,11 +129,10 @@ submitNameForm?.addEventListener('submit', async (e) => {
         const { id } = await apiFetch('createBingoList', 'POST', { bingoName: name }, token);
         localStorage.setItem('listId', id);
         localStorage.setItem('bingoName', name);
-        await populateBingoListsDropdown(id); // 👈 pass the new listId to select it
         hideModal('bingo-name-modal');
         showModal('bingo-items-modal');
     } catch (err) {
-        alert(err.message);
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
         hideLoader();
     }
@@ -143,22 +142,18 @@ submitListForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const raw = document.getElementById('bingoGoalsInput').value;
     const goals = raw.split('\n').map(s => s.trim()).filter(Boolean);
-
-    if (goals.length > 24) return alert('Max 24 goals allowed');
+    if (goals.length > 24) return Swal.fire('Max 24 goals allowed', '', 'warning');
 
     showLoader();
     try {
         const token = getCachedIdToken();
         const listId = localStorage.getItem('listId');
-
         await apiFetch('submitBingoGoals', 'POST', { listId, goals }, token);
 
-        // ✅ Now fetch the updated items
         const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
-
         const sortedItems = items.sort((a, b) => a.order - b.order);
         renderBingoBoard(sortedItems);
-        toggleUI({ userSignedIn: true, hasList: true });
+        toggleUI({ userSignedIn: true, hasList: true, hasAnyLists: true });
         hideModal('bingo-items-modal');
 
         requestAnimationFrame(() => {
@@ -166,70 +161,10 @@ submitListForm?.addEventListener('submit', async (e) => {
             monitorBingoWin(() => {
                 if (!hasBingo) {
                     hasBingo = true;
-                    alert('🎉 Bingo!');
+                    Swal.fire('🎉 Bingo!', 'You completed 5 in a row!', 'success');
                 }
             });
         });
-    } catch (err) {
-        alert(err.message);
-    } finally {
-        hideLoader();
-    }
-});
-
-// --- Auth Change Handler ---
-onAuthChange(async (user) => {
-    toggleUI({ userSignedIn: !!user });
-    if (!user) return;
-
-    showLoader();
-    try {
-        // 🧹 Step 1: Clear any stale listId/bingoName from localStorage
-        localStorage.removeItem('listId');
-        localStorage.removeItem('bingoName');
-
-        // Step 2: Fetch user's bingo lists
-        const bingoLists = await populateBingoListsDropdown();
-
-        if (!bingoLists.length) {
-            toggleUI({ userSignedIn: true, hasList: false });
-            return;
-        }
-
-        // ✅ Step 3: Set the first list as active
-        const { id: listId, bingoName } = bingoLists[0];
-        localStorage.setItem('listId', listId);
-        localStorage.setItem('bingoName', bingoName);
-
-        const token = getCachedIdToken();
-        const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
-
-        if (items.length < 24) {
-            const input = document.getElementById('bingoGoalsInput');
-            input.value = items.sort((a, b) => a.order - b.order).map(item => item.bingoItem || item.item).join('\n');
-            updateLineNumbers();
-            showModal('bingo-items-modal');
-        } else {
-            const sortedItems = items.sort((a, b) => a.order - b.order);
-            renderBingoBoard(sortedItems);
-            toggleUI({ userSignedIn: true, hasList: true });
-
-            requestAnimationFrame(() => {
-                let hasBingo = false;
-                monitorBingoWin(() => {
-                    if (!hasBingo) {
-                        hasBingo = true;
-                        Swal.fire({
-                            icon: 'success',
-                            title: '🎉 Bingo!',
-                            text: 'You completed 5 in a row!',
-                        });
-                    }
-                });
-            });
-        }
-
-        bindDropdownHandler();
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     } finally {
@@ -237,7 +172,60 @@ onAuthChange(async (user) => {
     }
 });
 
-// --- Global Modal Setup ---
+// --- Auth Change Handler ---
+onAuthChange(async (user) => {
+    toggleUI({ userSignedIn: !!user, hasList: false, hasAnyLists: false });
+    if (!user) return;
+
+    // Reset stale localStorage
+    localStorage.removeItem('listId');
+    localStorage.removeItem('bingoName');
+
+    showLoader();
+    try {
+        const bingoLists = await populateBingoListsDropdown();
+        const hasAnyLists = bingoLists.length > 0;
+
+        if (!hasAnyLists) {
+            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
+            return;
+        }
+
+        const listId = localStorage.getItem('listId');
+        const token = getCachedIdToken();
+        const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
+
+        bindDropdownHandler();
+
+        if (items.length < 24) {
+            const input = document.getElementById('bingoGoalsInput');
+            input.value = items.sort((a, b) => a.order - b.order).map(item => item.bingoItem || item.item).join('\n');
+            updateLineNumbers();
+            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists });
+            showModal('bingo-items-modal');
+        } else {
+            const sortedItems = items.sort((a, b) => a.order - b.order);
+            renderBingoBoard(sortedItems);
+            toggleUI({ userSignedIn: true, hasList: true, hasAnyLists });
+
+            requestAnimationFrame(() => {
+                let hasBingo = false;
+                monitorBingoWin(() => {
+                    if (!hasBingo) {
+                        hasBingo = true;
+                        Swal.fire('🎉 Bingo!', 'You completed 5 in a row!', 'success');
+                    }
+                });
+            });
+        }
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    } finally {
+        hideLoader();
+    }
+});
+
+// --- Modal Behavior ---
 bindCloseModalHandlers();
 hideOnOutsideClick('bingo-name-modal', 'bingo-items-modal', 'edit-modal', 'edit-list-modal');
 bindLineNumberEvents();
