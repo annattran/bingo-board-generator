@@ -6,6 +6,7 @@ import { getCachedIdToken } from './auth.js';
 const loader = document.getElementById('loaderOverlay');
 
 let previousBingoCount = 0;
+let bingoObserverInitialized = false;
 
 export function renderBingoBoard(items) {
     loader.classList.remove('hidden');
