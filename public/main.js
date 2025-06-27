@@ -184,27 +184,21 @@ onAuthChange(async (user) => {
 
     showLoader();
     try {
-        // 🧹 Step 1: Clear any stale listId/bingoName from localStorage
-        localStorage.removeItem('listId');
-        localStorage.removeItem('bingoName');
-
-        // Step 2: Fetch user's bingo lists
         const bingoLists = await populateBingoListsDropdown();
+        const hasAnyLists = bingoLists.length > 0;
 
-        if (!bingoLists.length) {
-            toggleUI({ userSignedIn: true, hasList: false });
+        if (!hasAnyLists) {
+            toggleUI({ userSignedIn: true, hasList: false, hasAnyLists: false });
             return;
         }
 
-        // ✅ Step 3: Set the first list as active
-        const { id: listId, bingoName } = bingoLists[0];
-        localStorage.setItem('listId', listId);
-        localStorage.setItem('bingoName', bingoName);
-
+        const listId = localStorage.getItem('listId');
         const token = getCachedIdToken();
         const { items } = await apiFetch(`getBingoItems?listId=${listId}`, 'GET', null, token);
 
-        if (items.length < 24) {
+        const hasList = items.length === 25;
+
+        if (!hasList) {
             const input = document.getElementById('bingoGoalsInput');
             input.value = items.sort((a, b) => a.order - b.order).map(item => item.bingoItem || item.item).join('\n');
             updateLineNumbers();
@@ -212,22 +206,19 @@ onAuthChange(async (user) => {
         } else {
             const sortedItems = items.sort((a, b) => a.order - b.order);
             renderBingoBoard(sortedItems);
-            toggleUI({ userSignedIn: true, hasList: true });
-
-            requestAnimationFrame(() => {
-                let hasBingo = false;
-                monitorBingoWin(() => {
-                    if (!hasBingo) {
-                        hasBingo = true;
-                        Swal.fire({
-                            icon: 'success',
-                            title: '🎉 Bingo!',
-                            text: 'You completed 5 in a row!',
-                        });
-                    }
-                });
-            });
         }
+
+        toggleUI({ userSignedIn: true, hasList, hasAnyLists });
+
+        requestAnimationFrame(() => {
+            let hasBingo = false;
+            monitorBingoWin(() => {
+                if (!hasBingo) {
+                    hasBingo = true;
+                    Swal.fire({ icon: 'success', title: '🎉 Bingo!', text: 'You completed 5 in a row!' });
+                }
+            });
+        });
 
         bindDropdownHandler();
     } catch (err) {
