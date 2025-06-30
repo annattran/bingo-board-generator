@@ -187,15 +187,36 @@ export function monitorBingoWin() {
             ? 'You completed 5 in a row!'
             : `You have ${count} Bingos!`;
 
+        const options = {
+            icon: 'success',
+            title: '🎉 Bingo!',
+            text,
+            confirmButtonText: 'Celebrate!'
+        };
+
         if (Swal.isVisible()) {
-            Swal.update({ text, title: '🎉 Bingo!' });
+            Swal.close(); // 👈 Close existing alert to reset timer
+            setTimeout(() => {
+                Swal.fire(options).then((result) => {
+                    if (result.isConfirmed) {
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 }
+                        });
+                    }
+                });
+            }, 0); // 👈 Delay slightly to avoid flicker
         } else {
-            Swal.fire({
-                icon: 'success',
-                title: '🎉 Bingo!',
-                text,
-                confirmButtonText: 'Nice!'
-            });
+            Swal.fire(options).then((result) => {
+                if (result.isConfirmed) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            });;
         }
     };
 
